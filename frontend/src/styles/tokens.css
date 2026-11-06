@@ -1,0 +1,172 @@
+/*
+ * BookTracker design tokens — "Literary Luxury".
+ * Every colour in the app comes from these variables, so both themes apply to
+ * every page. The light palette is the default; [data-theme="dark"] on <html>
+ * swaps the same names to their dark values.
+ */
+
+:root {
+  /* Brand */
+  --forest: #183d32;
+  --ivory: #f5f0e6;
+  --gold: #c5a46d;
+
+  /* Surfaces */
+  --color-bg: #f5f0e6;
+  --color-surface: #fbf8f1;
+  --color-surface-raised: #fffdf8;
+  --color-surface-sunken: #eee7d8;
+  --color-overlay: rgba(16, 32, 27, 0.48);
+
+  /* Lines */
+  --color-border: #e2d8c5;
+  --color-border-strong: #cdbfa5;
+  --color-rule-gold: #c5a46d;
+
+  /* Text */
+  --color-text: #1d2722;
+  --color-text-muted: #59625c;
+  --color-text-subtle: #737a73;
+  --color-heading: #183d32;
+
+  /* Actions */
+  --color-primary: #183d32;
+  --color-primary-hover: #0f2b23;
+  --color-on-primary: #f5f0e6;
+  --color-accent: #c5a46d;
+  --color-accent-text: #876728;
+  --color-accent-soft: rgba(197, 164, 109, 0.16);
+  --color-hover: rgba(24, 61, 50, 0.06);
+  --color-selected: rgba(24, 61, 50, 0.1);
+
+  /* Feedback (always shown with an icon and a label) */
+  --color-success: #2e6b4f;
+  --color-success-soft: #e3efe6;
+  --color-danger: #a63a2b;
+  --color-danger-hover: #8c2f22;
+  --color-danger-soft: #f6e4df;
+  --color-warning: #8a6417;
+  --color-warning-soft: #f5ebd5;
+  --color-info: #305f8f;
+  --color-info-soft: #e2ebf3;
+
+  /* Data colours: validated for colour-blind readers against this surface */
+  --chart-to-read: #a87420;
+  --chart-reading: #3d6cb8;
+  --chart-read: #2a8e5e;
+  --chart-single: #24533f;
+  --chart-track: #e9e1d1;
+  --chart-gap: var(--color-surface-raised);
+
+  /* Navigation (always deep green, in both themes) */
+  --color-nav-bg: #183d32;
+  --color-nav-text: #e9e2d2;
+  --color-nav-muted: #a9b8ae;
+  --color-nav-hover: rgba(245, 240, 230, 0.08);
+  --color-nav-active: rgba(197, 164, 109, 0.18);
+  --color-nav-border: rgba(245, 240, 230, 0.12);
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+
+  /* Shadows: soft and warm, never heavy */
+  --shadow-sm: 0 1px 2px rgba(24, 61, 50, 0.06), 0 1px 1px rgba(24, 61, 50, 0.04);
+  --shadow-md: 0 12px 28px -16px rgba(24, 61, 50, 0.28), 0 2px 6px rgba(24, 61, 50, 0.05);
+  --shadow-lg: 0 28px 60px -28px rgba(16, 32, 27, 0.45);
+  --shadow-book: 0 1px 1px rgba(16, 32, 27, 0.12), 0 10px 22px -12px rgba(16, 32, 27, 0.5);
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', 'Garamond', 'Times New Roman', Georgia, serif;
+  --font-sans: 'Jost', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: clamp(2.25rem, 1.6rem + 2.6vw, 3.25rem);
+  --text-hero: clamp(2.75rem, 1.7rem + 4.4vw, 5rem);
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  /* Shape */
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-lg: 6px;
+
+  /* Layout */
+  --sidebar-width: 264px;
+  --sidebar-rail-width: 88px;
+  --header-height: 68px;
+  --content-max: 1200px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --duration-fast: 140ms;
+  --duration: 240ms;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #0e1b17;
+  --color-surface: #13241e;
+  --color-surface-raised: #172c25;
+  --color-surface-sunken: #0b1612;
+  --color-overlay: rgba(4, 10, 8, 0.66);
+
+  --color-border: #263f36;
+  --color-border-strong: #355247;
+  --color-rule-gold: #a98a55;
+
+  --color-text: #ede6d6;
+  --color-text-muted: #a9b1a7;
+  --color-text-subtle: #8b958b;
+  --color-heading: #f2ebdc;
+
+  --color-primary: #2f6a55;
+  --color-primary-hover: #37795f;
+  --color-on-primary: #f5f0e6;
+  --color-accent: #c5a46d;
+  --color-accent-text: #d6bb8a;
+  --color-accent-soft: rgba(197, 164, 109, 0.14);
+  --color-hover: rgba(237, 230, 214, 0.06);
+  --color-selected: rgba(237, 230, 214, 0.1);
+
+  --color-success: #7fc39b;
+  --color-success-soft: rgba(127, 195, 155, 0.12);
+  --color-danger: #e98a77;
+  --color-danger-hover: #f09c8a;
+  --color-danger-soft: rgba(233, 138, 119, 0.12);
+  --color-warning: #dcb36a;
+  --color-warning-soft: rgba(220, 179, 106, 0.12);
+  --color-info: #8fb4dc;
+  --color-info-soft: rgba(143, 180, 220, 0.12);
+
+  --chart-to-read: #b98a3a;
+  --chart-reading: #5a82cc;
+  --chart-read: #3a9f6d;
+  --chart-single: #8fbba5;
+  --chart-track: #213a31;
+
+  --color-nav-bg: #0b1713;
+  --color-nav-border: rgba(245, 240, 230, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 14px 30px -18px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 30px 60px -28px rgba(0, 0, 0, 0.8);
+  --shadow-book: 0 1px 1px rgba(0, 0, 0, 0.3), 0 12px 24px -12px rgba(0, 0, 0, 0.85);
+
+  color-scheme: dark;
+}
