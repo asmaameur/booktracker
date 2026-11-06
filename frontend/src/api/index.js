@@ -40,4 +40,6 @@ export const libraryApi = {
 
 export const adminApi = {
   stats: (signal) => request('/admin/stats', { signal }),
+  users: (query, signal) => request('/admin/users', { query, signal }),
+  deleteUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
 };

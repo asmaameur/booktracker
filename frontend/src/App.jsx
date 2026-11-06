@@ -21,6 +21,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBooksPage from './pages/admin/AdminBooksPage';
 import BookFormPage from './pages/admin/BookFormPage';
 import AdminBookDetailsPage from './pages/admin/AdminBookDetailsPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
 
 import ProfilePage from './pages/shared/ProfilePage';
 
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="books/new" element={<BookFormPage key="new" />} />
               <Route path="books/:id" element={<AdminBookDetailsPage />} />
               <Route path="books/:id/edit" element={<BookFormPage key="edit" />} />
+              <Route path="users" element={<AdminUsersPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
             <Route path="/admin/books/:id/read" element={<ReaderPage mode="preview" />} />

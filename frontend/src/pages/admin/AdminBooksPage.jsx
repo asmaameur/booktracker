@@ -88,7 +88,7 @@ export default function AdminBooksPage() {
             {category && ` in ${category}`}
           </p>
           <div className="panel">
-            <table className="table book-table">
+            <table className="table book-table card-table">
               <thead>
                 <tr>
                   <th scope="col">Book</th>
@@ -106,7 +106,7 @@ export default function AdminBooksPage() {
               <tbody>
                 {books.data.books.map((book) => (
                   <tr key={book.id}>
-                    <td className="book-table__book">
+                    <td className="book-table__book card-table__main">
                       <span className="book-table__cover">
                         <BookCover book={book} />
                       </span>
@@ -129,7 +129,7 @@ export default function AdminBooksPage() {
                     <td data-label="Updated" className="tabular">
                       {formatShortDate(book.updatedAt)}
                     </td>
-                    <td className="book-table__actions">
+                    <td className="book-table__actions card-table__actions">
                       <Button
                         as={Link}
                         to={`/admin/books/${book.id}`}

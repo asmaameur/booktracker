@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   UserRound,
+  UsersRound,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +39,7 @@ const NAVIGATION = {
       activeWhen: (p) => p.startsWith('/admin/books') && p !== '/admin/books/new',
     },
     { to: '/admin/books/new', label: 'Add a book', icon: BookPlus, activeWhen: (p) => p === '/admin/books/new' },
+    { to: '/admin/users', label: 'Readers', icon: UsersRound, activeWhen: (p) => p.startsWith('/admin/users') },
     { to: '/admin/profile', label: 'Profile', icon: UserRound, activeWhen: (p) => p.startsWith('/admin/profile') },
   ],
 };

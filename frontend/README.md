@@ -51,6 +51,7 @@ React 18 · Vite 7 · React Router 6 · React-PDF 10 (PDF.js) · Lucide icons ·
 |        | `/admin/books/:id`          | Book details for admins                             |
 |        | `/admin/books/:id/edit`     | Edit a book                                         |
 |        | `/admin/books/:id/read`     | PDF preview (progress is not saved)                 |
+|        | `/admin/users`              | Readers: list, search and delete reader accounts    |
 |        | `/admin/profile`            | Profile                                             |
 
 Reader routes are only shown to `user` accounts and admin routes to `admin` accounts (`components/layout/RouteGuards.jsx`). This only controls what is displayed: the backend checks the same rules again on every request.

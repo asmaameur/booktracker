@@ -188,6 +188,9 @@ export default function AdminDashboard() {
             </h2>
             <p className="panel__subtitle">{plural(totals.readersJoinedLast30Days, 'reader')} joined in the last 30 days</p>
           </div>
+          <Link to="/admin/users" className="text-link">
+            Manage readers
+          </Link>
         </div>
         {recentReaders.length === 0 ? (
           <EmptyState icon={UsersRound} title="No readers yet" text="Readers appear here once they create an account." compact />
