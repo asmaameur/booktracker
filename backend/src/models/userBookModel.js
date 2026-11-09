@@ -34,10 +34,12 @@ function toEntryWithBook(row) {
       title: row.title,
       author: row.author,
       description: row.description,
-      category: row.category,
+      genre: row.genre,
       cover_image_url: row.cover_image_url,
       pdf_url: row.pdf_url,
       publication_year: row.publication_year,
+      rating_average: row.rating_average,
+      rating_count: row.rating_count,
       created_at: row.book_created_at,
       updated_at: row.book_updated_at,
     }),
@@ -46,10 +48,16 @@ function toEntryWithBook(row) {
 
 const SELECT_WITH_BOOK = `
   SELECT ${ENTRY_COLUMNS},
-         b.title, b.author, b.description, b.category, b.cover_image_url, b.pdf_url,
-         b.publication_year, b.created_at AS book_created_at, b.updated_at AS book_updated_at
+         b.title, b.author, b.description, b.cover_image_url, b.pdf_url,
+         b.publication_year, b.created_at AS book_created_at, b.updated_at AS book_updated_at,
+         g.name AS genre, r.rating_average, r.rating_count
   FROM user_books ub
-  JOIN books b ON b.id = ub.book_id`;
+  JOIN books b ON b.id = ub.book_id
+  JOIN genres g ON g.id = b.genre_id
+  LEFT JOIN LATERAL (
+    SELECT ROUND(AVG(rv.rating)::numeric, 1)::float8 AS rating_average, COUNT(*)::int AS rating_count
+    FROM reviews rv WHERE rv.book_id = b.id
+  ) r ON TRUE`;
 
 // Every query below filters on user_id, so a reader can only ever see or
 // change their own entries.

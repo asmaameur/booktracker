@@ -2,7 +2,7 @@ const env = require('../config/env');
 const { sendMail } = require('../config/mailer');
 const tokenModel = require('../models/verificationTokenModel');
 const { generateEmailToken, hashEmailToken } = require('../utils/security');
-const { verificationEmail, emailChangeEmail } = require('../utils/emailTemplates');
+const { verificationEmail, emailChangeEmail } = require('../views/emailView');
 
 function verificationLink(token) {
   return `${env.clientUrls[0]}/verify-email?token=${token}`;

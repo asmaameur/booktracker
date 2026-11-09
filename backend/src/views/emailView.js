@@ -1,3 +1,5 @@
+// The emails BookTracker sends, each with an HTML and a plain-text version.
+
 const FOREST = '#183D32';
 const IVORY = '#F5F0E6';
 const GOLD = '#C5A46D';
@@ -85,4 +87,26 @@ function emailChangeEmail({ name, link, hours }) {
   };
 }
 
-module.exports = { verificationEmail, emailChangeEmail };
+function passwordResetEmail({ name, link, minutes }) {
+  const safeName = escapeHtml(name);
+  return {
+    subject: 'Reset your BookTracker password',
+    text:
+      `Hello ${name},\n\n` +
+      `Someone (hopefully you) asked to reset the password of your BookTracker account. Choose a new password here:\n${link}\n\n` +
+      `The link expires in ${minutes} minutes and can only be used once. ` +
+      'If you did not ask for this, you can ignore this email: your password stays the same.',
+    html: layout({
+      heading: 'Choose a new password',
+      paragraphs: [
+        `Hello ${safeName},`,
+        'We received a request to reset the password of your BookTracker account. Click the button below to choose a new one.',
+      ],
+      buttonLabel: 'Reset my password',
+      link,
+      footnote: `This link expires in ${minutes} minutes and works only once. If you did not ask to reset your password, you can safely ignore this email: your password stays the same.`,
+    }),
+  };
+}
+
+module.exports = { verificationEmail, emailChangeEmail, passwordResetEmail };

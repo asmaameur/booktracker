@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
 const { withTransaction } = require('../config/db');
@@ -5,6 +6,10 @@ const HttpError = require('../utils/HttpError');
 const { parseId } = require('../middleware/validate');
 const bookModel = require('../models/bookModel');
 const userBookModel = require('../models/userBookModel');
+const genreModel = require('../models/genreModel');
+const notificationModel = require('../models/notificationModel');
+const { localPathFor, removeUnusedUploads } = require('../utils/uploads');
+const { toPagination } = require('../views/paginationView');
 
 const PDF_TIMEOUT_MS = 60 * 1000;
 const PDF_MAX_BYTES = 100 * 1024 * 1024;
@@ -17,24 +22,23 @@ async function findBookOr404(rawId) {
   return book;
 }
 
-// GET /api/books?search=&category=&sort=&page=&limit=
+// Turns the validated genre name into its id, or rejects an unknown genre.
+async function withGenreId(input) {
+  const genre = await genreModel.findByName(input.genre);
+  if (!genre) {
+    throw new HttpError(400, 'Please correct the highlighted fields.', {
+      code: 'VALIDATION_ERROR',
+      errors: { genre: 'Please choose a genre from the list.' },
+    });
+  }
+  return { ...input, genreId: genre.id };
+}
+
+// GET /api/books?search=&genre=&sort=&page=&limit=
 async function listBooks(req, res) {
   const filters = req.validated;
   const { books, total } = await bookModel.list(filters);
-  res.json({
-    books,
-    pagination: {
-      page: filters.page,
-      limit: filters.limit,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / filters.limit)),
-    },
-  });
-}
-
-// GET /api/books/categories
-async function listCategories(req, res) {
-  res.json({ categories: await bookModel.listCategories() });
+  res.json({ books, pagination: toPagination(filters, total) });
 }
 
 // GET /api/books/:id
@@ -54,17 +58,27 @@ async function getBook(req, res) {
 }
 
 // POST /api/books (admin)
+// Every reader gets a notification; the book and the notifications are saved
+// in one transaction so a failure leaves neither behind.
 async function createBook(req, res) {
-  const book = await bookModel.create(req.validated);
-  res.status(201).json({ book, message: `"${book.title}" has been added to the catalogue.` });
+  const input = await withGenreId(req.validated);
+  const { book, notified } = await withTransaction(async (client) => {
+    const created = await bookModel.create(input, client);
+    const count = await notificationModel.notifyReadersOfNewBook(created, client);
+    return { book: created, notified: count };
+  });
+  res.status(201).json({ book, notifiedReaders: notified, message: `"${book.title}" has been added to the catalogue.` });
 }
 
 // PUT /api/books/:id (admin)
 async function updateBook(req, res) {
-  const book = await bookModel.update(parseId(req.params.id, 'book id'), req.validated);
+  const before = await findBookOr404(req.params.id);
+  const book = await bookModel.update(before.id, await withGenreId(req.validated));
   if (!book) {
     throw new HttpError(404, 'This book does not exist or has been removed.', { code: 'BOOK_NOT_FOUND' });
   }
+  // A replaced uploaded cover or PDF is deleted from disk if nothing uses it.
+  await removeUnusedUploads([before.coverImageUrl, before.pdfUrl]);
   res.json({ book, message: `"${book.title}" has been updated.` });
 }
 
@@ -90,6 +104,7 @@ async function deleteBook(req, res) {
     await bookModel.remove(book.id, client);
     return removed;
   });
+  await removeUnusedUploads([book.coverImageUrl, book.pdfUrl]);
 
   res.json({ message: `"${book.title}" has been deleted.`, removedFromLibraries });
 }
@@ -106,6 +121,30 @@ async function streamPdf(req, res) {
   const book = await findBookOr404(req.params.id);
   if (!book.pdfUrl) {
     throw pdfError(404, 'No PDF is available for this book yet.', 'PDF_MISSING');
+  }
+
+  // A PDF uploaded to this server is read straight from disk.
+  const localFile = localPathFor(book.pdfUrl);
+  if (localFile) {
+    let stat;
+    try {
+      stat = await fs.promises.stat(localFile);
+    } catch {
+      throw pdfError(404, 'The PDF file for this book is missing. Please tell the librarian.', 'PDF_MISSING');
+    }
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="booktracker-${book.id}.pdf"`,
+      'Content-Length': String(stat.size),
+      'Cache-Control': 'private, max-age=3600',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+    });
+    try {
+      await pipeline(fs.createReadStream(localFile), res);
+    } catch {
+      res.destroy();
+    }
+    return;
   }
 
   let upstream;
@@ -151,4 +190,4 @@ async function streamPdf(req, res) {
   }
 }
 
-module.exports = { listBooks, listCategories, getBook, createBook, updateBook, deleteBook, streamPdf };
+module.exports = { listBooks, getBook, createBook, updateBook, deleteBook, streamPdf };

@@ -77,17 +77,22 @@ backend/
 └── src/
     ├── server.js             Starts the server after checking config and database
     ├── app.js                Express app: security headers, CORS, JSON, routes
-    ├── config/               Environment variables, PostgreSQL pool, mailer
+    │
+    ├── models/               Model: all SQL queries (data access)
+    ├── views/                View: what the API sends back (JSON shapes, email HTML)
+    ├── controllers/          Controller: business logic for each feature
+    ├── middleware/           Checks around the controllers: login, roles, rate limit, errors
+    │   └── validators/       Input rules for each request
+    │
     ├── routes/               URL → middleware → controller
-    ├── middleware/           Authentication, roles, validation, rate limit, errors
-    ├── validators/           Input rules for each request
-    ├── controllers/          Business logic for each feature
-    ├── models/               All SQL queries (data access)
+    ├── config/               Environment variables, PostgreSQL pool, mailer
     ├── services/             Email verification tokens and sending
-    └── utils/                Password hashing, JWT, email templates, errors
+    └── utils/                Password hashing, JWT, error class
 ```
 
-A request flows like this: **route → `authenticate` → `authorize(role)` → `validate` → controller → model → PostgreSQL**. Errors from any step end up in `middleware/errorHandler.js`, which turns them into a consistent JSON response.
+A request flows like this: **route → `authenticate` → `authorize(role)` → `validate` → controller → model → PostgreSQL**, and the controller answers through a view. Errors from any step end up in `middleware/errorHandler.js`, which turns them into a consistent JSON response.
+
+The screens people see are the React app in [`../frontend`](../frontend). `views/` is the backend's part of the View: it decides exactly what each answer contains (a user, for example, never includes the password hash) and the HTML of the emails.
 
 ## Database
 
@@ -113,7 +118,7 @@ erDiagram
         varchar title
         varchar author
         text description
-        varchar category
+        int genre_id FK
         text cover_image_url
         text pdf_url
         smallint publication_year
@@ -180,7 +185,8 @@ Verification links point to the frontend: `CLIENT_URL/verify-email?token=…`. T
 | Role-based access (`authorize('admin')`, `authorize('user')`) | `routes/*`                                |
 | Unverified accounts cannot log in or use protected routes | `controllers/authController.js`, `middleware/auth.js` |
 | Readers only ever reach their own library: queries always use the id from the token | `models/userBookModel.js` |
-| Every input validated; SQL always parameterised | `validators/`, `models/`                                      |
+| Every input validated; SQL always parameterised | `middleware/validators/`, `models/`                           |
+| The password hash is never sent to the browser | `views/userView.js`                                             |
 | Rate limiting on `/api/auth` routes | `middleware/rateLimit.js`                                           |
 | Security headers (Helmet), CORS limited to `CLIENT_URL` | `app.js`                                        |
 | Changing the password signs out other devices | `controllers/profileController.js`                     |

@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS books (
   title            VARCHAR(255) NOT NULL,
   author           VARCHAR(255) NOT NULL,
   description      TEXT,
-  category         VARCHAR(100),
   cover_image_url  TEXT,
   pdf_url          TEXT,
   publication_year SMALLINT,
@@ -48,7 +47,6 @@ CREATE TABLE IF NOT EXISTS books (
   CONSTRAINT books_publication_year_check CHECK (publication_year BETWEEN 1 AND 2100)
 );
 
-CREATE INDEX IF NOT EXISTS books_category_idx   ON books (LOWER(category));
 CREATE INDEX IF NOT EXISTS books_created_at_idx ON books (created_at DESC);
 
 -- ---------------------------------------------------------------------------
@@ -107,3 +105,143 @@ CREATE TRIGGER books_set_updated_at
 DROP TRIGGER IF EXISTS user_books_set_updated_at ON user_books;
 CREATE TRIGGER user_books_set_updated_at
   BEFORE UPDATE ON user_books FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ===========================================================================
+-- Genres, ratings, notifications and recommendations
+-- Everything below is also safe to re-run on an existing database: it adds
+-- what is missing and gives every existing book a genre.
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- genres: the fixed list of genres a book can belong to
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS genres (
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name       VARCHAR(50) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT genres_name_unique UNIQUE (name)
+);
+
+INSERT INTO genres (name) VALUES
+  ('Fiction'), ('Fantasy'), ('Science Fiction'), ('Romance'), ('Mystery'), ('Thriller'),
+  ('Horror'), ('History'), ('Biography'), ('Self-development'), ('Technology'), ('Educational')
+ON CONFLICT (name) DO NOTHING;
+
+-- Every book has exactly one genre. Genres replace the old free-text
+-- "category" column.
+ALTER TABLE books ADD COLUMN IF NOT EXISTS genre_id INTEGER REFERENCES genres (id) ON DELETE RESTRICT;
+
+-- Databases from before genres: give each book the genre that matches its old
+-- category (exact name first, then common keywords, else Fiction), then
+-- remove the category column. Skipped once the column is gone.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema() AND table_name = 'books' AND column_name = 'category'
+  ) THEN
+    EXECUTE $sql$
+      UPDATE books b
+      SET genre_id = COALESCE(
+        (SELECT g.id FROM genres g WHERE LOWER(g.name) = LOWER(TRIM(b.category))),
+        (SELECT g.id FROM genres g WHERE g.name = CASE
+           WHEN b.category ~* '(gothic|horror|ghost|vampire)'                THEN 'Horror'
+           WHEN b.category ~* '(sci-?fi|science fiction|dystopi|space)'       THEN 'Science Fiction'
+           WHEN b.category ~* '(fantasy|myth|fairy)'                          THEN 'Fantasy'
+           WHEN b.category ~* '(romance|love)'                                THEN 'Romance'
+           WHEN b.category ~* '(mystery|detective|crime)'                     THEN 'Mystery'
+           WHEN b.category ~* '(thriller|suspense|spy)'                       THEN 'Thriller'
+           WHEN b.category ~* '(histor|war)'                                  THEN 'History'
+           WHEN b.category ~* '(biograph|memoir|autobiograph)'                THEN 'Biography'
+           WHEN b.category ~* '(self|personal|psycholog|philosoph)'           THEN 'Self-development'
+           WHEN b.category ~* '(tech|computer|programming|software|science)'  THEN 'Technology'
+           WHEN b.category ~* '(education|textbook|academic|reference)'       THEN 'Educational'
+           ELSE 'Fiction'
+         END)
+      )
+      WHERE b.genre_id IS NULL
+    $sql$;
+    DROP INDEX IF EXISTS books_category_idx;
+    ALTER TABLE books DROP COLUMN category;
+  END IF;
+END $$;
+
+-- Books added without a genre (none should exist) fall back to Fiction.
+UPDATE books SET genre_id = (SELECT id FROM genres WHERE name = 'Fiction') WHERE genre_id IS NULL;
+
+ALTER TABLE books ALTER COLUMN genre_id SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS books_genre_id_idx ON books (genre_id);
+
+-- ---------------------------------------------------------------------------
+-- reviews: one rating (and optional comment) per reader per book
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reviews (
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  book_id    INTEGER     NOT NULL REFERENCES books (id) ON DELETE CASCADE,
+  rating     SMALLINT    NOT NULL,
+  comment    TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT reviews_user_book_unique UNIQUE (user_id, book_id),
+  CONSTRAINT reviews_rating_check     CHECK (rating BETWEEN 1 AND 5),
+  CONSTRAINT reviews_comment_length   CHECK (comment IS NULL OR char_length(comment) <= 2000)
+);
+
+CREATE INDEX IF NOT EXISTS reviews_book_id_idx ON reviews (book_id);
+
+DROP TRIGGER IF EXISTS reviews_set_updated_at ON reviews;
+CREATE TRIGGER reviews_set_updated_at
+  BEFORE UPDATE ON reviews FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- notifications: stored per user so they are waiting after being offline.
+--   new_book   -> every reader, when an admin adds a book
+--   new_review -> every admin, when a reader rates a book
+--   review_removed -> the review's author, when an admin deletes their review
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  book_id    INTEGER     REFERENCES books (id) ON DELETE CASCADE,
+  type       VARCHAR(30) NOT NULL DEFAULT 'new_book',
+  message    TEXT        NOT NULL,
+  is_read    BOOLEAN     NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT notifications_type_check CHECK (type IN ('new_book', 'new_review', 'review_removed'))
+);
+
+-- Older databases have a shorter list of types: replace the check so every
+-- type above is allowed.
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check CHECK (type IN ('new_book', 'new_review', 'review_removed'));
+
+CREATE INDEX IF NOT EXISTS notifications_user_created_idx ON notifications (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notifications_user_unread_idx  ON notifications (user_id) WHERE NOT is_read;
+
+-- ---------------------------------------------------------------------------
+-- user_genre_preferences: the genres each reader likes, used for recommendations
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_genre_preferences (
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  genre_id   INTEGER     NOT NULL REFERENCES genres (id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, genre_id)
+);
+
+-- ---------------------------------------------------------------------------
+-- password_reset_tokens: "forgot password" links sent by email
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id         INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  token      CHAR(64)    NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT password_reset_tokens_token_unique UNIQUE (token)
+);
+
+COMMENT ON COLUMN password_reset_tokens.token IS 'SHA-256 hash of the token sent by email; the raw token is never stored';
+
+CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx ON password_reset_tokens (user_id);

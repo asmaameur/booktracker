@@ -1,6 +1,6 @@
 const { text, optionalText, isHttpUrl, toInteger, isBlank } = require('./rules');
 
-const SORTS = ['newest', 'oldest', 'title', 'author', 'year'];
+const SORTS = ['newest', 'oldest', 'title', 'author', 'year', 'rating'];
 
 function book(body) {
   const errors = {};
@@ -8,7 +8,7 @@ function book(body) {
     title: text(body.title),
     author: text(body.author),
     description: optionalText(body.description),
-    category: optionalText(body.category),
+    genre: text(body.genre),
     coverImageUrl: optionalText(body.coverImageUrl),
     pdfUrl: optionalText(body.pdfUrl),
     publicationYear: null,
@@ -23,9 +23,10 @@ function book(body) {
   if (value.description && value.description.length > 5000) {
     errors.description = 'Description must be 5000 characters or fewer.';
   }
-  if (value.category && value.category.length > 100) {
-    errors.category = 'Category must be 100 characters or fewer.';
-  }
+
+  // The genre name is checked against the genres table by the controller.
+  if (!value.genre) errors.genre = 'Please choose a genre.';
+  else if (value.genre.length > 50) errors.genre = 'Please choose a genre from the list.';
 
   for (const field of ['coverImageUrl', 'pdfUrl']) {
     const url = value[field];
@@ -51,7 +52,7 @@ function listQuery(query) {
   const errors = {};
   const value = {
     search: text(query.search).slice(0, 100),
-    category: text(query.category).slice(0, 100),
+    genre: text(query.genre).slice(0, 50),
     sort: text(query.sort) || 'newest',
     page: 1,
     limit: 12,

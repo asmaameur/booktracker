@@ -5,7 +5,7 @@ const env = require('../src/config/env'); // loads .env
 const { pool } = require('../src/config/db');
 const userModel = require('../src/models/userModel');
 const { hashPassword } = require('../src/utils/security');
-const { normalizeEmail, isEmail, passwordProblem, text } = require('../src/validators/rules');
+const { normalizeEmail, isEmail, passwordProblem, text } = require('../src/middleware/validators/rules');
 const describeDbError = require('../src/utils/describeDbError');
 
 async function createAdmin() {

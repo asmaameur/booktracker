@@ -31,13 +31,14 @@ Tokens last 1 day by default (`expiresAt` in the login response). Logging out is
 
 | Status | `code` values | Meaning / what the frontend should do |
 | ------ | ------------- | ------------------------------------- |
-| 400 | `VALIDATION_ERROR`, `INVALID_ID`, `INVALID_JSON`, `INCORRECT_PASSWORD`, `INVALID_VERIFICATION_TOKEN`, `VERIFICATION_TOKEN_EXPIRED`, `CANNOT_DELETE_SELF` | Show `message` and the per-field `errors` |
+| 400 | `VALIDATION_ERROR`, `INVALID_ID`, `INVALID_JSON`, `INCORRECT_PASSWORD`, `INVALID_VERIFICATION_TOKEN`, `VERIFICATION_TOKEN_EXPIRED`, `INVALID_RESET_TOKEN`, `RESET_TOKEN_EXPIRED`, `INVALID_FILE`, `CANNOT_DELETE_SELF` | Show `message` and the per-field `errors` |
 | 401 | `AUTH_REQUIRED`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_REVOKED` | Session is over: clear the token and go to the login page |
 | 401 | `INVALID_CREDENTIALS` | Only from `/auth/login`: wrong email or password. Stay on the login page |
 | 403 | `EMAIL_NOT_VERIFIED` | Offer to resend the verification email |
 | 403 | `FORBIDDEN`, `CANNOT_DELETE_ADMIN` | The role is not allowed to do this |
-| 404 | `NOT_FOUND`, `BOOK_NOT_FOUND`, `NOT_IN_LIBRARY`, `PDF_MISSING`, `USER_NOT_FOUND` | The item does not exist |
+| 404 | `NOT_FOUND`, `BOOK_NOT_FOUND`, `NOT_IN_LIBRARY`, `PDF_MISSING`, `USER_NOT_FOUND`, `REVIEW_NOT_FOUND`, `NOTIFICATION_NOT_FOUND` | The item does not exist |
 | 409 | `EMAIL_TAKEN`, `ALREADY_IN_LIBRARY`, `BOOK_IN_LIBRARIES`, `DUPLICATE`, `CONFLICT` | Conflicts with existing data |
+| 413 | `FILE_TOO_LARGE`, `PAYLOAD_TOO_LARGE` | The uploaded file or the request body is over the limit |
 | 429 | `RATE_LIMITED` | Too many attempts on `/auth`; wait and retry |
 | 502 | `PDF_UNAVAILABLE`, `PDF_INVALID`, `PDF_TOO_LARGE` | The book's PDF could not be loaded from its source |
 | 500 | `SERVER_ERROR` | Unexpected error; show a generic message |
@@ -51,7 +52,8 @@ Tokens last 1 day by default (`expiresAt` in the login response). Logging out is
 
 // Book
 { "id": 5, "title": "Dracula", "author": "Bram Stoker", "description": "…",
-  "category": "Gothic Fiction",
+  "genre": "Horror",
+  "averageRating": 4.5, "ratingCount": 2,
   "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439846-L.jpg",
   "pdfUrl": "https://www.planetebook.com/free-ebooks/dracula.pdf",
   "hasPdf": true, "publicationYear": 1897, "createdAt": "…", "updatedAt": "…" }
@@ -162,6 +164,22 @@ Errors:
 
 ---
 
+### `POST /auth/forgot-password`
+
+Body: `{ "email": "bob@example.com" }`. Emails a link to `<CLIENT_URL>/reset-password?token=…`, valid for 60 minutes and usable once. A new link is sent at most once a minute per account.
+
+**200** `{ "message": "If an account exists for bob@example.com, we sent it a link to choose a new password. …" }`, the same answer whether or not the account exists.
+
+### `POST /auth/reset-password`
+
+Body: `{ "token": "<64 hex characters from the link>", "password": "NewPass456" }`. The password follows the registration rules.
+
+**200** `{ "message": "Your password has been changed. You can now log in with your new password." }`
+
+Every login token issued before the reset stops working (the user is signed out everywhere). Opening the emailed link also proves the address, so an unverified account becomes verified.
+
+Errors: 400 `INVALID_RESET_TOKEN` (unknown or already used), 400 `RESET_TOKEN_EXPIRED`, 400 `VALIDATION_ERROR` (weak password).
+
 ## Profile — *Any*
 
 ### `GET /profile`
@@ -235,12 +253,12 @@ Query parameters, all optional:
 | Parameter | Default | Description |
 | --------- | ------- | ----------- |
 | `search` | | Matches title or author, case-insensitive, partial |
-| `category` | | Exact category name, case-insensitive |
-| `sort` | `newest` | `newest`, `oldest`, `title`, `author`, `year` |
+| `genre` | | Exact genre name, case-insensitive (see `GET /genres`) |
+| `sort` | `newest` | `newest`, `oldest`, `title`, `author`, `year`, `rating` |
 | `page` | `1` | Page number |
 | `limit` | `12` | Books per page, 1–50 |
 
-Example: `GET /books?search=bronte&category=Romance&sort=title&page=1&limit=12`
+Example: `GET /books?search=bronte&genre=Romance&sort=title&page=1&limit=12`
 
 **200**
 ```json
@@ -248,14 +266,6 @@ Example: `GET /books?search=bronte&category=Romance&sort=title&page=1&limit=12`
   "books": [ { "id": 10, "title": "Alice's Adventures in Wonderland", "author": "Lewis Carroll", "…": "…" } ],
   "pagination": { "page": 1, "limit": 12, "total": 10, "totalPages": 1 }
 }
-```
-
-### `GET /books/categories` — *Any*
-
-For the category filter.
-
-```json
-{ "categories": [ { "name": "Fantasy", "count": 1 }, { "name": "Gothic Fiction", "count": 3 } ] }
 ```
 
 ### `GET /books/:id` — *Any*
@@ -296,16 +306,15 @@ Errors (JSON):
   "title": "Frankenstein",
   "author": "Mary Shelley",
   "description": "Victor Frankenstein gives life to a creature…",
-  "category": "Science Fiction",
+  "genre": "Science Fiction",
   "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439471-L.jpg",
   "pdfUrl": "https://www.planetebook.com/free-ebooks/frankenstein.pdf",
   "publicationYear": 1818
 }
 ```
 
-Required: `title`, `author` (up to 255 characters each). Optional:
+Required: `title`, `author` (up to 255 characters each) and `genre` (a name from `GET /genres`). Optional:
 - `description`: up to 5000 characters.
-- `category`: up to 100 characters.
 - `coverImageUrl` and `pdfUrl`: must start with `http://` or `https://`.
 - `publicationYear`: from 1 to next year.
 
@@ -440,13 +449,13 @@ Errors:
 ```json
 {
   "totals": {
-    "books": 10, "booksWithPdf": 10, "categories": 6,
+    "books": 10, "booksWithPdf": 10, "genres": 5,
     "users": 4, "readers": 3, "verifiedReaders": 3, "admins": 1,
     "readersJoinedLast30Days": 3, "libraryEntries": 4
   },
   "readingStatus": { "toRead": 0, "reading": 3, "read": 1 },
   "libraryUpdatesLast7Days": 4,
-  "booksByCategory": [ { "name": "Gothic Fiction", "count": 3 } ],
+  "booksByGenre": [ { "name": "Horror", "count": 3 } ],
   "recentBooks": [ { /* Book */ } ],
   "recentReaders": [ { /* User */ } ],
   "popularBooks": [ { /* Book */, "readerCount": 2 } ]
@@ -492,3 +501,124 @@ Errors:
 - 403 `CANNOT_DELETE_ADMIN`: the account belongs to an administrator.
 - 404 `USER_NOT_FOUND`
 - 400 `INVALID_ID`
+
+## Genres — *Any*
+
+### `GET /genres`
+
+The 12 genres, with how many books each has. `POST /books` and `PUT /books/:id` require a `genre` field with one of these names, otherwise they answer 400 with `errors.genre`.
+
+```json
+{ "genres": [ { "id": 3, "name": "Biography", "count": 0 }, { "id": 2, "name": "Fantasy", "count": 1 } ] }
+```
+
+## Ratings and reviews
+
+Every book carries `averageRating` (one decimal, `null` when nobody has rated it) and `ratingCount`, calculated from the reviews table.
+
+### `GET /books/:id/reviews` — *Any*
+
+```json
+{
+  "summary": { "averageRating": 4.5, "ratingCount": 2, "distribution": { "5": 1, "4": 1, "3": 0, "2": 0, "1": 0 } },
+  "reviews": [ { "id": 7, "bookId": 5, "userId": 4, "userName": "Bob Stone", "rating": 5,
+                 "comment": "Loved it.", "createdAt": "…", "updatedAt": "…" } ],
+  "myReview": null
+}
+```
+
+### `POST /books/:id/reviews` — *Reader*
+
+Body: `{ "rating": 4, "comment": "Optional, up to 2000 characters" }`. **201** `{ review, summary, message }`.
+One review per reader per book: a second one answers 409 `REVIEW_EXISTS`. Every admin gets a `new_review` notification, for example `Asma Ameur rated "Dracula" 4 stars. “Loved the atmosphere.”`.
+
+### `PUT /reviews/:id` — *Reader, own review only*
+
+Same body. **200** `{ review, summary, message }`. Another reader's review answers 403 `FORBIDDEN`; 404 `REVIEW_NOT_FOUND`.
+
+### `DELETE /reviews/:id` — *Reader (own review) or Admin (any review)*
+
+Readers can delete their own review only (another reader's answers 403 `FORBIDDEN`).
+
+Admins can delete any review (moderation). Optional body: `{ "reason": "Reviews must be about the book." }` (up to 500 characters). The author gets a `review_removed` notification, including the reason when one is given.
+
+**200** `{ summary, message }`. 404 `REVIEW_NOT_FOUND`.
+
+## Notifications — *Any*
+
+Notifications are stored in the database, so they are waiting after being offline. Each user only sees and changes their own.
+
+| `type` | Who receives it | When |
+| ------ | --------------- | ---- |
+| `new_book` | Every reader | An admin adds a book (`POST /books` returns `notifiedReaders`) |
+| `new_review` | Every admin | A reader posts a rating (`POST /books/:id/reviews`). Editing a review does not notify again |
+| `review_removed` | The review's author | An admin deletes their review (`DELETE /reviews/:id`), with the reason if given |
+
+The notification is saved in the same transaction as the book or the review.
+
+### `GET /notifications?limit=&unread=`
+
+`limit` 1–50 (default 20); `unread=true` returns unread ones only. Newest first.
+
+```json
+{
+  "notifications": [
+    { "id": 12, "type": "new_book", "message": "New in the catalogue: \"Dracula\" by Bram Stoker.",
+      "isRead": false, "createdAt": "…",
+      "book": { "id": 5, "title": "Dracula", "author": "Bram Stoker", "coverImageUrl": "https://…" } }
+  ],
+  "unreadCount": 1
+}
+```
+
+### `GET /notifications/unread-count`
+
+`{ "unreadCount": 1 }`. The navbar bell polls it every 20 seconds and when the tab is refocused.
+
+### `PATCH /notifications/:id/read`
+
+**200** `{ "unreadCount": 0 }`. 404 `NOTIFICATION_NOT_FOUND` (also for another reader's notification).
+
+### `PATCH /notifications/read-all`
+
+**200** `{ "updated": 3, "unreadCount": 0 }`
+
+## Favourite genres and recommendations — *Reader*
+
+### `GET /preferences/genres`
+
+`{ "genres": ["Fantasy", "Mystery"] }`
+
+### `PUT /preferences/genres`
+
+Body: `{ "genres": ["Fantasy", "Mystery"] }` replaces the whole set (an empty list clears it). Unknown names answer 400 with `errors.genres`.
+
+### `GET /recommendations?limit=`
+
+`limit` 1–24 (default 6). Each book is scored from the reader's favourite genres (strongest), the genres on their shelves, their own ratings (high ratings raise a genre, low ones lower it) and the book's average rating. Books they have read, are reading or have reviewed come last, and books already on their To Read shelf come just before those.
+
+```json
+{
+  "books": [ { "id": 5, "title": "Dracula", "genre": "Horror", "…": "…",
+               "recommendation": { "reason": "Because you like Horror", "matchesPreferences": true, "alreadyInLibrary": false } } ],
+  "preferredGenres": ["Horror"],
+  "hasPreferences": true,
+  "hasHistory": true
+}
+```
+
+## File uploads — *Admin*
+
+Covers and PDFs can be uploaded instead of linking to another website. Send the file itself as the request body, with its type as `Content-Type`. The answer's `url` goes into the book's `coverImageUrl` or `pdfUrl`, like any link.
+
+| Route | Accepted `Content-Type` | Limit |
+| ----- | ------------------------ | ----- |
+| `POST /uploads/cover` | `image/jpeg`, `image/png`, `image/webp` | 5 MB |
+| `POST /uploads/pdf` | `application/pdf` | 100 MB |
+
+**201** `{ "url": "http://localhost:4000/uploads/covers/3f2a…9c.jpg", "size": 48213, "message": "File uploaded." }`
+
+- The file's first bytes are checked, so a renamed file is refused (400 `INVALID_FILE`). Too large: 413 `FILE_TOO_LARGE`.
+- Files are stored in `backend/uploads/` (ignored by git) with random names.
+- Covers are public at `/uploads/covers/…`. Uploaded PDFs are not public: readers open them through `GET /books/:id/pdf`, behind login.
+- When a book is edited or deleted, the uploaded files it no longer uses are deleted, unless another book uses them.

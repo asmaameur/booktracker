@@ -1,5 +1,5 @@
 const { text, toInteger, isBlank } = require('./rules');
-const { READING_STATUSES } = require('../models/userBookModel');
+const { READING_STATUSES } = require('../../models/userBookModel');
 
 const STATUS_MESSAGE = `Reading status must be one of: ${READING_STATUSES.join(', ')}.`;
 

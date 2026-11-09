@@ -1,12 +1,24 @@
 const { pool } = require('../config/db');
 
 const SORT_ORDERS = {
-  newest: 'created_at DESC, id DESC',
-  oldest: 'created_at ASC, id ASC',
-  title: 'LOWER(title) ASC, id ASC',
-  author: 'LOWER(author) ASC, LOWER(title) ASC, id ASC',
-  year: 'publication_year DESC NULLS LAST, id DESC',
+  newest: 'b.created_at DESC, b.id DESC',
+  oldest: 'b.created_at ASC, b.id ASC',
+  title: 'LOWER(b.title) ASC, b.id ASC',
+  author: 'LOWER(b.author) ASC, LOWER(b.title) ASC, b.id ASC',
+  year: 'b.publication_year DESC NULLS LAST, b.id DESC',
+  rating: 'rating_average DESC NULLS LAST, rating_count DESC, b.id DESC',
 };
+
+// Every book is returned with its genre name and its rating, calculated from
+// the reviews table (rating_average is NULL while nobody has rated it).
+const BOOK_SELECT = `
+  SELECT b.*, g.name AS genre, r.rating_average, r.rating_count
+  FROM books b
+  JOIN genres g ON g.id = b.genre_id
+  LEFT JOIN LATERAL (
+    SELECT ROUND(AVG(rv.rating)::numeric, 1)::float8 AS rating_average, COUNT(*)::int AS rating_count
+    FROM reviews rv WHERE rv.book_id = b.id
+  ) r ON TRUE`;
 
 function toBook(row) {
   if (!row) return null;
@@ -15,11 +27,13 @@ function toBook(row) {
     title: row.title,
     author: row.author,
     description: row.description,
-    category: row.category,
+    genre: row.genre ?? null,
     coverImageUrl: row.cover_image_url,
     pdfUrl: row.pdf_url,
     hasPdf: Boolean(row.pdf_url),
     publicationYear: row.publication_year,
+    averageRating: row.rating_average == null ? null : Number(row.rating_average),
+    ratingCount: row.rating_count ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -29,25 +43,28 @@ function escapeLikePattern(text) {
   return text.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
-async function list({ search, category, sort, page, limit }, db = pool) {
+async function list({ search, genre, sort, page, limit }, db = pool) {
   const conditions = [];
   const params = [];
 
   if (search) {
     params.push(`%${escapeLikePattern(search)}%`);
-    conditions.push(`(title ILIKE $${params.length} OR author ILIKE $${params.length})`);
+    conditions.push(`(b.title ILIKE $${params.length} OR b.author ILIKE $${params.length})`);
   }
-  if (category) {
-    params.push(category);
-    conditions.push(`LOWER(category) = LOWER($${params.length})`);
+  if (genre) {
+    params.push(genre);
+    conditions.push(`LOWER(g.name) = LOWER($${params.length})`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const orderBy = SORT_ORDERS[sort] || SORT_ORDERS.newest;
 
-  const countResult = await db.query(`SELECT COUNT(*)::int AS total FROM books ${where}`, params);
+  const countResult = await db.query(
+    `SELECT COUNT(*)::int AS total FROM books b JOIN genres g ON g.id = b.genre_id ${where}`,
+    params
+  );
   const { rows } = await db.query(
-    `SELECT * FROM books ${where} ORDER BY ${orderBy}
+    `${BOOK_SELECT} ${where} ORDER BY ${orderBy}
      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
     [...params, limit, (page - 1) * limit]
   );
@@ -56,47 +73,47 @@ async function list({ search, category, sort, page, limit }, db = pool) {
 }
 
 async function findById(id, db = pool) {
-  const { rows } = await db.query('SELECT * FROM books WHERE id = $1', [id]);
+  const { rows } = await db.query(`${BOOK_SELECT} WHERE b.id = $1`, [id]);
   return toBook(rows[0]);
 }
 
 async function create(book, db = pool) {
   const { rows } = await db.query(
-    `INSERT INTO books (title, author, description, category, cover_image_url, pdf_url, publication_year)
+    `INSERT INTO books (title, author, description, cover_image_url, pdf_url, publication_year, genre_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING *`,
+     RETURNING id`,
     [
       book.title,
       book.author,
       book.description,
-      book.category,
       book.coverImageUrl,
       book.pdfUrl,
       book.publicationYear,
+      book.genreId,
     ]
   );
-  return toBook(rows[0]);
+  return findById(rows[0].id, db);
 }
 
 async function update(id, book, db = pool) {
   const { rows } = await db.query(
     `UPDATE books
-     SET title = $2, author = $3, description = $4, category = $5,
-         cover_image_url = $6, pdf_url = $7, publication_year = $8
+     SET title = $2, author = $3, description = $4,
+         cover_image_url = $5, pdf_url = $6, publication_year = $7, genre_id = $8
      WHERE id = $1
-     RETURNING *`,
+     RETURNING id`,
     [
       id,
       book.title,
       book.author,
       book.description,
-      book.category,
       book.coverImageUrl,
       book.pdfUrl,
       book.publicationYear,
+      book.genreId,
     ]
   );
-  return toBook(rows[0]);
+  return rows[0] ? findById(id, db) : null;
 }
 
 async function remove(id, db = pool) {
@@ -112,17 +129,6 @@ async function existsWithTitleAndAuthor(title, author, db = pool) {
   return rows.length > 0;
 }
 
-async function listCategories(db = pool) {
-  const { rows } = await db.query(
-    `SELECT MIN(category) AS category, COUNT(*)::int AS count
-     FROM books
-     WHERE category IS NOT NULL AND category <> ''
-     GROUP BY LOWER(category)
-     ORDER BY MIN(category)`
-  );
-  return rows.map((row) => ({ name: row.category, count: row.count }));
-}
-
 async function countAll(db = pool) {
   const { rows } = await db.query(
     `SELECT COUNT(*)::int AS total,
@@ -133,17 +139,15 @@ async function countAll(db = pool) {
 }
 
 async function findRecent(limit, db = pool) {
-  const { rows } = await db.query('SELECT * FROM books ORDER BY created_at DESC, id DESC LIMIT $1', [limit]);
+  const { rows } = await db.query(`${BOOK_SELECT} ORDER BY b.created_at DESC, b.id DESC LIMIT $1`, [limit]);
   return rows.map(toBook);
 }
 
 async function findMostAdded(limit, db = pool) {
   const { rows } = await db.query(
-    `SELECT b.*, COUNT(ub.id)::int AS reader_count
-     FROM books b
-     JOIN user_books ub ON ub.book_id = b.id
-     GROUP BY b.id
-     ORDER BY reader_count DESC, LOWER(b.title) ASC
+    `${BOOK_SELECT}
+     JOIN (SELECT book_id, COUNT(*)::int AS reader_count FROM user_books GROUP BY book_id) ub ON ub.book_id = b.id
+     ORDER BY ub.reader_count DESC, LOWER(b.title) ASC
      LIMIT $1`,
     [limit]
   );
@@ -151,6 +155,7 @@ async function findMostAdded(limit, db = pool) {
 }
 
 module.exports = {
+  BOOK_SELECT,
   toBook,
   list,
   findById,
@@ -158,7 +163,6 @@ module.exports = {
   update,
   remove,
   existsWithTitleAndAuthor,
-  listCategories,
   countAll,
   findRecent,
   findMostAdded,

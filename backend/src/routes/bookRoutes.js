@@ -1,6 +1,8 @@
 const { Router } = require('express');
 const controller = require('../controllers/bookController');
-const validators = require('../validators/bookValidators');
+const reviewController = require('../controllers/reviewController');
+const validators = require('../middleware/validators/bookValidators');
+const reviewValidators = require('../middleware/validators/reviewValidators');
 const { validate } = require('../middleware/validate');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -10,9 +12,12 @@ router.use(authenticate);
 
 // Readers and admins
 router.get('/', validate(validators.listQuery, 'query'), controller.listBooks);
-router.get('/categories', controller.listCategories);
 router.get('/:id', controller.getBook);
 router.get('/:id/pdf', controller.streamPdf);
+router.get('/:id/reviews', reviewController.listReviews);
+
+// Readers only: one review per book (edit or delete it through /api/reviews/:id)
+router.post('/:id/reviews', authorize('user'), validate(reviewValidators.review), reviewController.createReview);
 
 // Admins only
 router.post('/', authorize('admin'), validate(validators.book), controller.createBook);

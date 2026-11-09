@@ -2,6 +2,7 @@ const HttpError = require('../utils/HttpError');
 const { parseId } = require('../middleware/validate');
 const bookModel = require('../models/bookModel');
 const userBookModel = require('../models/userBookModel');
+const { toProgress } = require('../views/libraryView');
 
 // Every handler uses req.user.id from the verified login token, never an id
 // sent by the client, so readers can only reach their own library.
@@ -14,18 +15,6 @@ async function assertBookExists(bookId) {
 
 function notInLibrary() {
   return new HttpError(404, 'This book is not in your library.', { code: 'NOT_IN_LIBRARY' });
-}
-
-function toProgress(bookId, entry) {
-  return {
-    bookId,
-    inLibrary: Boolean(entry),
-    readingStatus: entry ? entry.readingStatus : null,
-    currentPage: entry ? entry.currentPage : 0,
-    totalPages: entry ? entry.totalPages : null,
-    progressPercent: entry ? entry.progressPercent : 0,
-    updatedAt: entry ? entry.updatedAt : null,
-  };
 }
 
 // GET /api/library?status=

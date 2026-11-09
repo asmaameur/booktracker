@@ -17,19 +17,6 @@ function toUser(row) {
   };
 }
 
-// The shape sent to clients: never includes the password hash.
-function toPublicUser(user) {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    isVerified: user.isVerified,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
-}
-
 async function create({ name, email, passwordHash, role = 'user', isVerified = false }, db = pool) {
   const { rows } = await db.query(
     `INSERT INTO users (name, email, password, role, is_verified)
@@ -139,7 +126,7 @@ async function list({ search, role, page, limit }, db = pool) {
     [...params, limit, (page - 1) * limit]
   );
   return {
-    users: rows.map((row) => ({ ...toPublicUser(toUser(row)), libraryCount: row.library_count })),
+    users: rows.map((row) => ({ ...toUser(row), libraryCount: row.library_count })),
     total: countResult.rows[0].total,
   };
 }
@@ -156,11 +143,10 @@ async function findRecent(limit, db = pool) {
     `SELECT ${PUBLIC_COLUMNS} FROM users WHERE role = 'user' ORDER BY created_at DESC, id DESC LIMIT $1`,
     [limit]
   );
-  return rows.map((row) => toPublicUser(toUser(row)));
+  return rows.map(toUser);
 }
 
 module.exports = {
-  toPublicUser,
   create,
   findById,
   findByIdWithPassword,

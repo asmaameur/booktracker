@@ -17,5 +17,9 @@ router.use('/profile', require('./profileRoutes'));
 router.use('/books', require('./bookRoutes'));
 router.use('/library', require('./libraryRoutes'));
 router.use('/admin', require('./adminRoutes'));
+router.use('/reviews', require('./reviewRoutes'));
+router.use('/notifications', require('./notificationRoutes'));
+router.use('/uploads', require('./uploadRoutes'));
+router.use('/', require('./genreRoutes'));
 
 module.exports = router;

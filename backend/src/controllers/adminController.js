@@ -3,53 +3,30 @@ const { parseId } = require('../middleware/validate');
 const bookModel = require('../models/bookModel');
 const userModel = require('../models/userModel');
 const userBookModel = require('../models/userBookModel');
+const genreModel = require('../models/genreModel');
+const { toStats, toAccount } = require('../views/adminView');
+const { toPagination } = require('../views/paginationView');
 
 // GET /api/admin/stats
 async function getStats(req, res) {
-  const [books, users, library, categories, recentBooks, recentReaders, popularBooks] = await Promise.all([
+  const [books, users, library, genres, recentBooks, recentReaders, popularBooks] = await Promise.all([
     bookModel.countAll(),
     userModel.countByRole(),
     userBookModel.countByStatus(),
-    bookModel.listCategories(),
+    genreModel.listWithCounts(),
     bookModel.findRecent(5),
     userModel.findRecent(5),
     bookModel.findMostAdded(5),
   ]);
 
-  res.json({
-    totals: {
-      books: books.total,
-      booksWithPdf: books.withPdf,
-      categories: categories.length,
-      users: users.readers + users.admins,
-      readers: users.readers,
-      verifiedReaders: users.verifiedReaders,
-      admins: users.admins,
-      readersJoinedLast30Days: users.joinedLast30Days,
-      libraryEntries: library.total,
-    },
-    readingStatus: { toRead: library.toRead, reading: library.reading, read: library.read },
-    libraryUpdatesLast7Days: library.updatedLast7Days,
-    booksByCategory: categories,
-    recentBooks,
-    recentReaders,
-    popularBooks,
-  });
+  res.json(toStats({ books, users, library, genres, recentBooks, recentReaders, popularBooks }));
 }
 
 // GET /api/admin/users?search=&role=&page=&limit=
 async function listUsers(req, res) {
   const filters = req.validated;
   const { users, total } = await userModel.list(filters);
-  res.json({
-    users,
-    pagination: {
-      page: filters.page,
-      limit: filters.limit,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / filters.limit)),
-    },
-  });
+  res.json({ users: users.map(toAccount), pagination: toPagination(filters, total) });
 }
 
 // DELETE /api/admin/users/:id

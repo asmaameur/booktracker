@@ -82,4 +82,17 @@ function changePassword(body) {
   return { errors, value: { currentPassword, newPassword } };
 }
 
-module.exports = { register, login, emailOnly, verifyEmail, updateProfile, changePassword };
+// POST /api/auth/reset-password { token, password }
+function resetPassword(body) {
+  const errors = {};
+  const token = text(body.token);
+  const password = typeof body.password === 'string' ? body.password : '';
+
+  if (!/^[a-f0-9]{64}$/.test(token)) errors.token = 'This reset link is invalid.';
+  const problem = passwordProblem(password);
+  if (problem) errors.password = problem;
+
+  return { errors, value: { token, password } };
+}
+
+module.exports = { register, login, emailOnly, verifyEmail, updateProfile, changePassword, resetPassword };

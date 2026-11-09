@@ -4,10 +4,11 @@ const userModel = require('../models/userModel');
 const tokenModel = require('../models/verificationTokenModel');
 const { hashPassword, comparePassword, issueSession } = require('../utils/security');
 const { createToken, sendVerificationEmail } = require('../services/emailVerification');
+const { toPublicUser } = require('../views/userView');
 
 async function profilePayload(user) {
   const pending = await tokenModel.findPendingEmailChange(user.id, user.email);
-  return { user: userModel.toPublicUser(user), pendingEmail: pending ? pending.email : null };
+  return { user: toPublicUser(user), pendingEmail: pending ? pending.email : null };
 }
 
 async function assertCurrentPassword(userId, currentPassword) {
@@ -82,7 +83,7 @@ async function changePassword(req, res) {
   res.json({
     message: 'Your password has been changed. Other devices have been signed out.',
     ...issueSession(user),
-    user: userModel.toPublicUser(user),
+    user: toPublicUser(user),
   });
 }
 

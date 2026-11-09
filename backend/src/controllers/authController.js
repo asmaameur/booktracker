@@ -4,6 +4,9 @@ const userModel = require('../models/userModel');
 const tokenModel = require('../models/verificationTokenModel');
 const { hashPassword, comparePassword, hashEmailToken, issueSession } = require('../utils/security');
 const { createToken, sendVerificationEmail } = require('../services/emailVerification');
+const resetTokenModel = require('../models/passwordResetTokenModel');
+const { createResetToken, sendPasswordResetEmail, RESET_TOKEN_TTL_MINUTES } = require('../services/passwordReset');
+const { toPublicUser } = require('../views/userView');
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
@@ -31,7 +34,7 @@ async function register(req, res) {
       ? `Your account has been created. We sent a verification link to ${email}.`
       : 'Your account has been created, but we could not send the verification email. Please request a new link.',
     emailSent,
-    user: userModel.toPublicUser(user),
+    user: toPublicUser(user),
   });
 }
 
@@ -69,7 +72,7 @@ async function verifyEmail(req, res) {
         ? 'Your new email address is confirmed.'
         : 'Your email address is verified. You can now log in.',
     purpose,
-    user: userModel.toPublicUser(user),
+    user: toPublicUser(user),
   });
 }
 
@@ -109,7 +112,59 @@ async function login(req, res) {
     });
   }
 
-  res.json({ ...issueSession(user), user: userModel.toPublicUser(user) });
+  res.json({ ...issueSession(user), user: toPublicUser(user) });
 }
 
-module.exports = { register, verifyEmail, resendVerification, login };
+// POST /api/auth/forgot-password
+// Always answers the same way so it cannot be used to discover which emails
+// have accounts. A new link is sent at most once a minute per account.
+async function forgotPassword(req, res) {
+  const { email } = req.validated;
+  const user = await userModel.findByEmail(email);
+
+  if (user) {
+    const latest = await resetTokenModel.findLatestForUser(user.id);
+    const sentRecently = latest && Date.now() - latest.createdAt.getTime() < RESEND_COOLDOWN_MS;
+    if (!sentRecently) {
+      const token = await createResetToken(user.id);
+      await sendPasswordResetEmail({ user, token });
+    }
+  }
+
+  res.json({
+    message: `If an account exists for ${email}, we sent it a link to choose a new password. The link is valid for ${RESET_TOKEN_TTL_MINUTES} minutes.`,
+  });
+}
+
+// POST /api/auth/reset-password
+// Sets the new password, signs the account out everywhere (older login
+// tokens stop working) and uses up the link. Opening the emailed link also
+// proves the address belongs to the user, so the account counts as verified.
+async function resetPassword(req, res) {
+  const { token, password } = req.validated;
+  const passwordHash = await hashPassword(password);
+
+  await withTransaction(async (client) => {
+    const record = await resetTokenModel.findByHash(hashEmailToken(token), client);
+    if (!record) {
+      throw new HttpError(400, 'This reset link is invalid or has already been used. Please request a new one.', {
+        code: 'INVALID_RESET_TOKEN',
+      });
+    }
+    if (record.expiresAt <= new Date()) {
+      await resetTokenModel.deleteAllForUser(record.userId, client);
+      throw new HttpError(400, 'This reset link has expired. Please request a new one.', {
+        code: 'RESET_TOKEN_EXPIRED',
+      });
+    }
+
+    const user = await userModel.findById(record.userId, client);
+    await userModel.updatePassword(user.id, passwordHash, new Date(), client);
+    if (!user.isVerified) await userModel.markVerified(user.id, user.email, client);
+    await resetTokenModel.deleteAllForUser(user.id, client);
+  });
+
+  res.json({ message: 'Your password has been changed. You can now log in with your new password.' });
+}
+
+module.exports = { register, verifyEmail, resendVerification, login, forgotPassword, resetPassword };

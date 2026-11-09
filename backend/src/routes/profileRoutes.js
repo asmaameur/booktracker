@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const controller = require('../controllers/profileController');
-const validators = require('../validators/authValidators');
+const validators = require('../middleware/validators/authValidators');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 
