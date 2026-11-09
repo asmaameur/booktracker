@@ -76,6 +76,42 @@ async function forUser(userId, limit, db = pool) {
   }));
 }
 
+// "Readers also liked" for one book: books rated 4 or 5 stars by the readers
+// who rated this one 4 or 5 stars, most shared fans first. When there are not
+// enough, books of the same genre fill the list (best rated first).
+const ALSO_LIKED_SQL = `
+  WITH fans AS (
+    SELECT user_id FROM reviews WHERE book_id = $1 AND rating >= 4
+  ),
+  liked AS (
+    SELECT rv.book_id, COUNT(*)::int AS shared_fans
+    FROM reviews rv JOIN fans f ON f.user_id = rv.user_id
+    WHERE rv.book_id <> $1 AND rv.rating >= 4
+    GROUP BY rv.book_id
+  ),
+  this_book AS (SELECT genre_id FROM books WHERE id = $1),
+  catalogue AS (${BOOK_SELECT})
+  SELECT c.*, COALESCE(l.shared_fans, 0) AS shared_fans
+  FROM catalogue c
+  LEFT JOIN liked l ON l.book_id = c.id
+  WHERE c.id <> $1 AND (l.shared_fans IS NOT NULL OR c.genre_id = (SELECT genre_id FROM this_book))
+  ORDER BY shared_fans DESC, rating_average DESC NULLS LAST, rating_count DESC, created_at DESC, id DESC
+  LIMIT $2`;
+
+async function alsoLiked(bookId, limit, db = pool) {
+  const { rows } = await db.query(ALSO_LIKED_SQL, [bookId, limit]);
+  return rows.map((row) => ({
+    ...toBook(row),
+    similarity: {
+      sharedFans: row.shared_fans,
+      reason:
+        row.shared_fans > 0
+          ? `${row.shared_fans} reader${row.shared_fans === 1 ? '' : 's'} who liked this also liked it`
+          : `Also ${row.genre}`,
+    },
+  }));
+}
+
 // Whether the reader has anything to base recommendations on besides genres.
 async function hasHistory(userId, db = pool) {
   const { rows } = await db.query(
@@ -86,4 +122,4 @@ async function hasHistory(userId, db = pool) {
   return rows[0].has_history;
 }
 
-module.exports = { forUser, hasHistory };
+module.exports = { forUser, alsoLiked, hasHistory };

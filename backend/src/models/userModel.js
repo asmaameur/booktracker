@@ -85,7 +85,8 @@ async function countByRole(db = pool) {
        COUNT(*) FILTER (WHERE role = 'user')::int                     AS readers,
        COUNT(*) FILTER (WHERE role = 'user' AND is_verified)::int     AS verified_readers,
        COUNT(*) FILTER (WHERE role = 'admin')::int                    AS admins,
-       COUNT(*) FILTER (WHERE role = 'user' AND created_at >= NOW() - INTERVAL '30 days')::int AS joined_last_30_days
+       COUNT(*) FILTER (WHERE role = 'user' AND created_at >= NOW() - INTERVAL '30 days')::int AS joined_last_30_days,
+       COUNT(*) FILTER (WHERE role = 'user' AND created_at >= NOW() - INTERVAL '7 days')::int AS joined_last_7_days
      FROM users`
   );
   const row = rows[0];
@@ -94,6 +95,7 @@ async function countByRole(db = pool) {
     verifiedReaders: row.verified_readers,
     admins: row.admins,
     joinedLast30Days: row.joined_last_30_days,
+    joinedLast7Days: row.joined_last_7_days,
   };
 }
 

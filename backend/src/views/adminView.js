@@ -1,7 +1,7 @@
 const { toPublicUser } = require('./userView');
 
 // GET /api/admin/stats: the dashboard figures, built from the model queries.
-function toStats({ books, users, library, genres, recentBooks, recentReaders, popularBooks }) {
+function toStats({ books, users, library, genres, recentBooks, recentReaders, popularBooks, activity }) {
   return {
     totals: {
       books: books.total,
@@ -12,6 +12,8 @@ function toStats({ books, users, library, genres, recentBooks, recentReaders, po
       verifiedReaders: users.verifiedReaders,
       admins: users.admins,
       readersJoinedLast30Days: users.joinedLast30Days,
+      readersJoinedLast7Days: users.joinedLast7Days,
+      reviewsLast7Days: activity.reviewsLast7Days,
       libraryEntries: library.total,
     },
     readingStatus: { toRead: library.toRead, reading: library.reading, read: library.read },
@@ -21,6 +23,10 @@ function toStats({ books, users, library, genres, recentBooks, recentReaders, po
     recentBooks,
     recentReaders: recentReaders.map(toPublicUser),
     popularBooks,
+    // Recent reader activity and the best / lowest rated books.
+    latestReviews: activity.latestReviews,
+    topRatedBooks: activity.topRatedBooks,
+    lowestRatedBooks: activity.lowestRatedBooks,
   };
 }
 

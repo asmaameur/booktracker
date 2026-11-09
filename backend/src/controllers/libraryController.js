@@ -2,6 +2,7 @@ const HttpError = require('../utils/HttpError');
 const { parseId } = require('../middleware/validate');
 const bookModel = require('../models/bookModel');
 const userBookModel = require('../models/userBookModel');
+const statsModel = require('../models/statsModel');
 const { toProgress } = require('../views/libraryView');
 
 // Every handler uses req.user.id from the verified login token, never an id
@@ -72,6 +73,7 @@ async function getProgress(req, res) {
 async function saveProgress(req, res) {
   const bookId = parseId(req.params.bookId, 'book id');
   await assertBookExists(bookId);
+  const before = await userBookModel.findForUser(req.user.id, bookId);
 
   let entry;
   try {
@@ -85,6 +87,10 @@ async function saveProgress(req, res) {
     }
     throw err;
   }
+  // Pages moved forward count towards today's reading (for "pages this week").
+  // Jumping back, or a jump of more than 500 pages at once, is not counted.
+  const advanced = entry.currentPage - (before?.currentPage ?? 0);
+  if (advanced > 0 && advanced <= 500) await statsModel.recordPages(req.user.id, advanced);
   res.json({ progress: toProgress(bookId, entry), message: 'Progress saved.' });
 }
 

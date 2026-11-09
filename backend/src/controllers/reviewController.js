@@ -4,6 +4,7 @@ const { parseId } = require('../middleware/validate');
 const bookModel = require('../models/bookModel');
 const reviewModel = require('../models/reviewModel');
 const notificationModel = require('../models/notificationModel');
+const { toPagination } = require('../views/paginationView');
 
 async function assertBookExists(bookId) {
   const book = await bookModel.findById(bookId);
@@ -26,17 +27,19 @@ async function findOwnReview(rawId, userId) {
   return review;
 }
 
-// GET /api/books/:id/reviews (any)
-// All reviews, the rating summary, and the current user's own review (or null).
+// GET /api/books/:id/reviews?sort=&page=&limit= (any)
+// One page of the other readers' reviews, the rating summary, and the current
+// user's own review (or null), which is never part of the pages.
 async function listReviews(req, res) {
   const bookId = parseId(req.params.id, 'book id');
   await assertBookExists(bookId);
-  const [reviews, summary] = await Promise.all([
-    reviewModel.listForBook(bookId),
+  const filters = req.validated;
+  const [{ reviews, total }, summary, myReview] = await Promise.all([
+    reviewModel.listForBook(bookId, req.user.id, filters),
     reviewModel.summaryForBook(bookId),
+    reviewModel.findForUserAndBook(req.user.id, bookId),
   ]);
-  const myReview = reviews.find((review) => review.userId === req.user.id) || null;
-  res.json({ summary, reviews, myReview });
+  res.json({ summary, reviews, myReview, pagination: toPagination(filters, total) });
 }
 
 // POST /api/books/:id/reviews (reader)
@@ -97,4 +100,29 @@ async function deleteReview(req, res) {
   });
 }
 
-module.exports = { listReviews, createReview, updateReview, deleteReview };
+// PUT /api/reviews/:id/helpful and DELETE /api/reviews/:id/helpful (reader)
+// Marks another reader's review as helpful, or takes the vote back.
+function helpfulVote(add) {
+  return async function vote(req, res) {
+    const review = await reviewModel.findById(parseId(req.params.id, 'review id'), req.user.id);
+    if (!review) {
+      throw new HttpError(404, 'This review does not exist or has been deleted.', { code: 'REVIEW_NOT_FOUND' });
+    }
+    if (review.userId === req.user.id) {
+      throw new HttpError(400, 'You cannot vote for your own review.', { code: 'CANNOT_VOTE_OWN_REVIEW' });
+    }
+    if (add) await reviewModel.addVote(review.id, req.user.id);
+    else await reviewModel.removeVote(review.id, req.user.id);
+    const updated = await reviewModel.findById(review.id, req.user.id);
+    res.json({ helpfulCount: updated.helpfulCount, votedByMe: updated.votedByMe });
+  };
+}
+
+module.exports = {
+  listReviews,
+  createReview,
+  updateReview,
+  deleteReview,
+  markHelpful: helpfulVote(true),
+  unmarkHelpful: helpfulVote(false),
+};

@@ -451,11 +451,14 @@ Errors:
   "totals": {
     "books": 10, "booksWithPdf": 10, "genres": 5,
     "users": 4, "readers": 3, "verifiedReaders": 3, "admins": 1,
-    "readersJoinedLast30Days": 3, "libraryEntries": 4
+    "readersJoinedLast30Days": 3, "readersJoinedLast7Days": 1, "reviewsLast7Days": 5, "libraryEntries": 4
   },
   "readingStatus": { "toRead": 0, "reading": 3, "read": 1 },
   "libraryUpdatesLast7Days": 4,
   "booksByGenre": [ { "name": "Horror", "count": 3 } ],
+  "latestReviews": [ { "id": 9, "rating": 2, "comment": "…", "userName": "Omar", "createdAt": "…", "book": { "id": 5, "title": "Dracula", "…": "…" } } ],
+  "topRatedBooks": [ { /* Book */ } ],
+  "lowestRatedBooks": [ { /* Book, average under 3 stars */ } ],
   "recentBooks": [ { /* Book */ } ],
   "recentReaders": [ { /* User */ } ],
   "popularBooks": [ { /* Book */, "readerCount": 2 } ]
@@ -516,14 +519,33 @@ The 12 genres, with how many books each has. `POST /books` and `PUT /books/:id` 
 
 Every book carries `averageRating` (one decimal, `null` when nobody has rated it) and `ratingCount`, calculated from the reviews table.
 
-### `GET /books/:id/reviews` — *Any*
+### `GET /books/:id/reviews?sort=&page=&limit=` — *Any*
+
+`sort`: `newest` (default), `helpful`, `highest`, `lowest`. `limit` 1–50 (default 10). The pages hold the **other** readers' reviews; the current user's own review is always in `myReview` (or `null`).
 
 ```json
 {
   "summary": { "averageRating": 4.5, "ratingCount": 2, "distribution": { "5": 1, "4": 1, "3": 0, "2": 0, "1": 0 } },
-  "reviews": [ { "id": 7, "bookId": 5, "userId": 4, "userName": "Bob Stone", "rating": 5,
-                 "comment": "Loved it.", "createdAt": "…", "updatedAt": "…" } ],
-  "myReview": null
+  "reviews": [ { "id": 7, "bookId": 5, "userId": 4, "userName": "Bob Stone", "rating": 5, "comment": "Loved it.",
+                 "helpfulCount": 3, "votedByMe": false, "createdAt": "…", "updatedAt": "…" } ],
+  "myReview": null,
+  "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
+}
+```
+
+### `PUT /reviews/:id/helpful` and `DELETE /reviews/:id/helpful` — *Reader*
+
+Marks another reader's review as helpful, or takes the vote back (one vote per reader; repeating is harmless). **200** `{ "helpfulCount": 4, "votedByMe": true }`. Your own review: 400 `CANNOT_VOTE_OWN_REVIEW`.
+
+### `GET /books/:id/similar` — *Any*
+
+"Readers also liked": up to 6 books rated 4–5 stars by the readers who rated this book 4–5 stars (most shared fans first), then books of the same genre.
+
+```json
+{
+  "books": [ { "id": 4, "title": "Frankenstein", "…": "…",
+               "similarity": { "sharedFans": 2, "reason": "2 readers who liked this also liked it" } } ],
+  "basedOnReaders": true
 }
 ```
 
@@ -622,3 +644,37 @@ Covers and PDFs can be uploaded instead of linking to another website. Send the 
 - Files are stored in `backend/uploads/` (ignored by git) with random names.
 - Covers are public at `/uploads/covers/…`. Uploaded PDFs are not public: readers open them through `GET /books/:id/pdf`, behind login.
 - When a book is edited or deleted, the uploaded files it no longer uses are deleted, unless another book uses them.
+
+## Reading statistics and goals — *Reader*
+
+A book counts as finished when its status becomes **Read** (the date is kept in `user_books.finished_at`; moving it back to another status removes it). Pages read are counted when progress moves forward in the reader.
+
+### `GET /stats/reading?year=`
+
+`year` defaults to the current year.
+
+```json
+{
+  "stats": {
+    "year": 2026,
+    "goal": { "target": 15, "finished": 11, "percent": 73 },
+    "finishedThisYear": 11,
+    "byMonth": [1, 2, 1, 0, 1, 1, 1, 0, 1, 1, 2, 0],
+    "recentlyFinished": [ { /* Book */ "finishedAt": "…" } ],
+    "pages": { "thisWeek": 192, "total": 2343, "lastWeek": [ { "day": "2026-11-03", "pages": 34 } ] },
+    "topGenres": [ { "name": "Horror", "count": 3 } ],
+    "shelf": { "reading": 1, "read": 11 },
+    "reviews": { "count": 1, "averageGiven": 5 }
+  }
+}
+```
+
+`goal` is `null` when no goal is set. `lastWeek` always has 7 days, today last.
+
+### `PUT /stats/goal`
+
+Body: `{ "target": 15 }` (1–1000 books; optional `"year"`). **200** `{ stats, message }`.
+
+### `DELETE /stats/goal?year=`
+
+**200** `{ stats, message }` with `goal: null`.

@@ -145,17 +145,32 @@ async function findRecent(limit, db = pool) {
 
 async function findMostAdded(limit, db = pool) {
   const { rows } = await db.query(
-    `${BOOK_SELECT}
-     JOIN (SELECT book_id, COUNT(*)::int AS reader_count FROM user_books GROUP BY book_id) ub ON ub.book_id = b.id
-     ORDER BY ub.reader_count DESC, LOWER(b.title) ASC
+    `SELECT book.*, ub.reader_count
+     FROM (${BOOK_SELECT}) book
+     JOIN (SELECT book_id, COUNT(*)::int AS reader_count FROM user_books GROUP BY book_id) ub ON ub.book_id = book.id
+     ORDER BY ub.reader_count DESC, LOWER(book.title) ASC
      LIMIT $1`,
     [limit]
   );
   return rows.map((row) => ({ ...toBook(row), readerCount: row.reader_count }));
 }
 
+// Rated books, best first ("top"), or worst first for books averaging under
+// 3 stars ("lowest"), so a well-liked book never shows up as "lowest rated".
+async function findByRating(direction, limit, db = pool) {
+  const top = direction === 'top';
+  const { rows } = await db.query(
+    `${BOOK_SELECT} WHERE r.rating_count > 0 ${top ? '' : 'AND r.rating_average < 3'}
+     ORDER BY r.rating_average ${top ? 'DESC' : 'ASC'}, r.rating_count DESC, b.id DESC
+     LIMIT $1`,
+    [limit]
+  );
+  return rows.map(toBook);
+}
+
 module.exports = {
   BOOK_SELECT,
+  findByRating,
   toBook,
   list,
   findById,

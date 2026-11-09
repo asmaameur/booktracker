@@ -51,6 +51,9 @@ const env = {
   mailFrom: process.env.MAIL_FROM || 'BookTracker <no-reply@booktracker.local>',
 
   authRateLimitMax: readInteger('AUTH_RATE_LIMIT_MAX', 20),
+
+  // Where uploaded covers and PDFs are stored (default: backend/uploads).
+  uploadDir: process.env.UPLOAD_DIR || path.resolve(__dirname, '../../uploads'),
 };
 
 // Only the API server needs these; database scripts can run without them.

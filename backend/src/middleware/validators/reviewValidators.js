@@ -1,4 +1,5 @@
-const { optionalText, toInteger } = require('./rules');
+const { optionalText, text, toInteger, isBlank } = require('./rules');
+const { REVIEW_SORTS } = require('../../models/reviewModel');
 
 const COMMENT_MAX = 2000;
 
@@ -31,4 +32,22 @@ function removal(body) {
   return { errors, value: { reason } };
 }
 
-module.exports = { review, removal, COMMENT_MAX, REASON_MAX };
+// GET /api/books/:id/reviews?sort=&page=&limit=
+function listQuery(query) {
+  const errors = {};
+  const value = { sort: text(query.sort) || 'newest', page: 1, limit: 10 };
+  if (!REVIEW_SORTS.includes(value.sort)) errors.sort = `Sort must be one of: ${REVIEW_SORTS.join(', ')}.`;
+  if (!isBlank(query.page)) {
+    const page = toInteger(query.page);
+    if (Number.isNaN(page) || page < 1) errors.page = 'Page must be a positive whole number.';
+    else value.page = page;
+  }
+  if (!isBlank(query.limit)) {
+    const limit = toInteger(query.limit);
+    if (Number.isNaN(limit) || limit < 1 || limit > 50) errors.limit = 'Limit must be between 1 and 50.';
+    else value.limit = limit;
+  }
+  return { errors, value };
+}
+
+module.exports = { review, removal, listQuery, COMMENT_MAX, REASON_MAX };

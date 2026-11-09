@@ -1,12 +1,13 @@
 // Files uploaded by admins (book covers and PDFs), stored on the server's disk
-// under backend/uploads/. Each file gets a random name; the book keeps the
+// under backend/uploads/ (or UPLOAD_DIR). Each file gets a random name; the book keeps the
 // file's full URL in cover_image_url or pdf_url, like an external link.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const env = require('../config/env');
 const { pool } = require('../config/db');
 
-const UPLOAD_ROOT = path.resolve(__dirname, '../../uploads');
+const UPLOAD_ROOT = path.resolve(env.uploadDir);
 
 const KINDS = {
   cover: {

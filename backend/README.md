@@ -64,6 +64,7 @@ The full list of endpoints, with request and response examples, is in [API.md](A
 | `npm run db:init`         | Creates the database (if missing) and all tables                |
 | `npm run db:seed`         | Adds the sample books (skips books that already exist)          |
 | `npm run db:create-admin` | Creates the admin from `.env`, or promotes an existing account  |
+| `npm test`                | Runs the API tests on a separate `booktracker_test` database    |
 
 ## Project structure (MVC)
 
@@ -202,6 +203,16 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO booktrack
 ```
 
 Then set `DB_USER=booktracker_app` and its password in `.env`. Keep using `postgres` for `npm run db:init`, which needs to create tables.
+
+## Automated tests
+
+```bash
+npm test
+```
+
+Runs the API tests in `tests/` (Node's built-in test runner, no extra dependency) against a separate database, **`booktracker_test`**, which is created and emptied automatically using the PostgreSQL settings from `.env`. Your normal database is never touched: the tests refuse to run unless the database name ends with `_test`. Emails are printed instead of sent, and uploads go to a temporary folder.
+
+GitHub runs the same tests on every pull request that changes `backend/` (see `.github/workflows/backend-tests.yml`).
 
 ## Testing with Postman
 

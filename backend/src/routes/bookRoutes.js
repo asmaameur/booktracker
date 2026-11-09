@@ -14,7 +14,8 @@ router.use(authenticate);
 router.get('/', validate(validators.listQuery, 'query'), controller.listBooks);
 router.get('/:id', controller.getBook);
 router.get('/:id/pdf', controller.streamPdf);
-router.get('/:id/reviews', reviewController.listReviews);
+router.get('/:id/reviews', validate(reviewValidators.listQuery, 'query'), reviewController.listReviews);
+router.get('/:id/similar', controller.similarBooks);
 
 // Readers only: one review per book (edit or delete it through /api/reviews/:id)
 router.post('/:id/reviews', authorize('user'), validate(reviewValidators.review), reviewController.createReview);

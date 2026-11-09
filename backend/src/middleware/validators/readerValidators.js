@@ -41,4 +41,34 @@ function genrePreferences(body) {
   return { errors, value: { genres } };
 }
 
-module.exports = { notificationsQuery, recommendationsQuery, genrePreferences };
+
+// ?year= for reading stats: defaults to the current year.
+function readYear(raw, errors) {
+  const current = new Date().getFullYear();
+  if (isBlank(raw)) return current;
+  const year = toInteger(raw);
+  if (Number.isNaN(year) || year < 2000 || year > current + 1) {
+    errors.year = `Year must be between 2000 and ${current + 1}.`;
+    return current;
+  }
+  return year;
+}
+
+// GET /api/stats/reading?year= and DELETE /api/stats/goal?year=
+function statsQuery(query) {
+  const errors = {};
+  return { errors, value: { year: readYear(query.year, errors) } };
+}
+
+// PUT /api/stats/goal { target, year? }
+function readingGoal(body) {
+  const errors = {};
+  const year = readYear(body.year, errors);
+  const target = toInteger(body.target);
+  if (Number.isNaN(target) || target < 1 || target > 1000) {
+    errors.target = 'Your goal must be a whole number of books between 1 and 1000.';
+  }
+  return { errors, value: { year, target } };
+}
+
+module.exports = { notificationsQuery, recommendationsQuery, genrePreferences, statsQuery, readingGoal };

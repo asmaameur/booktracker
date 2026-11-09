@@ -15,4 +15,8 @@ router.put('/:id', authorize('user'), validate(validators.review), controller.up
 // optionally giving a reason that is sent to its author.
 router.delete('/:id', authorize('user', 'admin'), validate(validators.removal), controller.deleteReview);
 
+// Readers mark other readers' reviews as helpful.
+router.put('/:id/helpful', authorize('user'), controller.markHelpful);
+router.delete('/:id/helpful', authorize('user'), controller.unmarkHelpful);
+
 module.exports = router;

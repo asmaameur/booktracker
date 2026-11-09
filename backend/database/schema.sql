@@ -245,3 +245,76 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 COMMENT ON COLUMN password_reset_tokens.token IS 'SHA-256 hash of the token sent by email; the raw token is never stored';
 
 CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx ON password_reset_tokens (user_id);
+
+-- ===========================================================================
+-- Reading stats and goals, helpful votes on reviews
+-- ===========================================================================
+
+-- When a book was finished, kept up to date by a trigger: set when the status
+-- becomes "read", cleared when it changes to anything else.
+ALTER TABLE user_books ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+
+-- Books already marked as read: their last update is the best guess. The
+-- updated_at trigger is paused so "last opened" dates do not change.
+ALTER TABLE user_books DISABLE TRIGGER user_books_set_updated_at;
+UPDATE user_books SET finished_at = updated_at WHERE reading_status = 'read' AND finished_at IS NULL;
+ALTER TABLE user_books ENABLE TRIGGER user_books_set_updated_at;
+
+CREATE OR REPLACE FUNCTION set_finished_at() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.reading_status = 'read' THEN
+    IF TG_OP = 'INSERT' OR OLD.reading_status IS DISTINCT FROM 'read' THEN
+      NEW.finished_at = NOW();
+    END IF;
+  ELSE
+    NEW.finished_at = NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS user_books_set_finished_at ON user_books;
+CREATE TRIGGER user_books_set_finished_at
+  BEFORE INSERT OR UPDATE ON user_books FOR EACH ROW EXECUTE FUNCTION set_finished_at();
+
+CREATE INDEX IF NOT EXISTS user_books_user_finished_idx ON user_books (user_id, finished_at);
+
+-- ---------------------------------------------------------------------------
+-- reading_activity: pages read per reader per day (from saved progress)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reading_activity (
+  user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  day     DATE    NOT NULL,
+  pages   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day),
+  CONSTRAINT reading_activity_pages_check CHECK (pages >= 0)
+);
+
+-- ---------------------------------------------------------------------------
+-- reading_goals: how many books a reader wants to finish in a year
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reading_goals (
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  year       SMALLINT    NOT NULL,
+  target     SMALLINT    NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, year),
+  CONSTRAINT reading_goals_target_check CHECK (target BETWEEN 1 AND 1000)
+);
+
+DROP TRIGGER IF EXISTS reading_goals_set_updated_at ON reading_goals;
+CREATE TRIGGER reading_goals_set_updated_at
+  BEFORE UPDATE ON reading_goals FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- review_votes: "this review was helpful", one vote per reader per review
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS review_votes (
+  review_id  INTEGER     NOT NULL REFERENCES reviews (id) ON DELETE CASCADE,
+  user_id    INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (review_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS review_votes_user_id_idx ON review_votes (user_id);

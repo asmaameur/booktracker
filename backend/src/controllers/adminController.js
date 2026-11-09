@@ -4,12 +4,25 @@ const bookModel = require('../models/bookModel');
 const userModel = require('../models/userModel');
 const userBookModel = require('../models/userBookModel');
 const genreModel = require('../models/genreModel');
+const reviewModel = require('../models/reviewModel');
 const { toStats, toAccount } = require('../views/adminView');
 const { toPagination } = require('../views/paginationView');
 
 // GET /api/admin/stats
 async function getStats(req, res) {
-  const [books, users, library, genres, recentBooks, recentReaders, popularBooks] = await Promise.all([
+  const [
+    books,
+    users,
+    library,
+    genres,
+    recentBooks,
+    recentReaders,
+    popularBooks,
+    latestReviews,
+    reviewsLast7Days,
+    topRatedBooks,
+    lowestRatedBooks,
+  ] = await Promise.all([
     bookModel.countAll(),
     userModel.countByRole(),
     userBookModel.countByStatus(),
@@ -17,9 +30,24 @@ async function getStats(req, res) {
     bookModel.findRecent(5),
     userModel.findRecent(5),
     bookModel.findMostAdded(5),
+    reviewModel.findLatest(5),
+    reviewModel.countSince(7),
+    bookModel.findByRating('top', 5),
+    bookModel.findByRating('lowest', 5),
   ]);
 
-  res.json(toStats({ books, users, library, genres, recentBooks, recentReaders, popularBooks }));
+  res.json(
+    toStats({
+      books,
+      users,
+      library,
+      genres,
+      recentBooks,
+      recentReaders,
+      popularBooks,
+      activity: { latestReviews, reviewsLast7Days, topRatedBooks, lowestRatedBooks },
+    })
+  );
 }
 
 // GET /api/admin/users?search=&role=&page=&limit=

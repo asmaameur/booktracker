@@ -9,6 +9,7 @@ const userBookModel = require('../models/userBookModel');
 const genreModel = require('../models/genreModel');
 const notificationModel = require('../models/notificationModel');
 const { localPathFor, removeUnusedUploads } = require('../utils/uploads');
+const recommendationModel = require('../models/recommendationModel');
 const { toPagination } = require('../views/paginationView');
 
 const PDF_TIMEOUT_MS = 60 * 1000;
@@ -55,6 +56,14 @@ async function getBook(req, res) {
   const entry = await userBookModel.findForUser(req.user.id, book.id);
   if (entry) delete entry.book;
   res.json({ book, libraryEntry: entry });
+}
+
+// GET /api/books/:id/similar (any): "Readers also liked".
+// basedOnReaders is false when the list only comes from the same genre.
+async function similarBooks(req, res) {
+  const book = await findBookOr404(req.params.id);
+  const books = await recommendationModel.alsoLiked(book.id, 6);
+  res.json({ books, basedOnReaders: books.some((b) => b.similarity.sharedFans > 0) });
 }
 
 // POST /api/books (admin)
@@ -190,4 +199,4 @@ async function streamPdf(req, res) {
   }
 }
 
-module.exports = { listBooks, getBook, createBook, updateBook, deleteBook, streamPdf };
+module.exports = { listBooks, getBook, similarBooks, createBook, updateBook, deleteBook, streamPdf };
