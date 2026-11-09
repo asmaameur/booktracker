@@ -1,4 +1,4 @@
-const { toPublicUser } = require('./userView');
+const { toAccountSummary } = require('./userView');
 
 // GET /api/admin/stats: the dashboard figures, built from the model queries.
 function toStats({ books, users, library, genres, recentBooks, recentReaders, popularBooks, activity }) {
@@ -21,7 +21,7 @@ function toStats({ books, users, library, genres, recentBooks, recentReaders, po
     // Only genres that have books, for the dashboard chart.
     booksByGenre: genres.filter((genre) => genre.count > 0).map(({ name, count }) => ({ name, count })),
     recentBooks,
-    recentReaders: recentReaders.map(toPublicUser),
+    recentReaders: recentReaders.map(toAccountSummary),
     popularBooks,
     // Recent reader activity and the best / lowest rated books.
     latestReviews: activity.latestReviews,
@@ -33,7 +33,7 @@ function toStats({ books, users, library, genres, recentBooks, recentReaders, po
 // One row of the admin's accounts list: the account and how many books it has
 // on its shelves.
 function toAccount(user) {
-  return { ...toPublicUser(user), libraryCount: user.libraryCount };
+  return { ...toAccountSummary(user), libraryCount: user.libraryCount };
 }
 
 module.exports = { toStats, toAccount };

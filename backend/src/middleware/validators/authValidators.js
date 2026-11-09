@@ -45,6 +45,29 @@ function verifyEmail(body) {
   return { errors, value: { token } };
 }
 
+const MIN_AGE = 5;
+const MAX_AGE = 120;
+
+// A real calendar date giving an age between MIN_AGE and MAX_AGE.
+function birthDateProblem(raw) {
+  if (isBlank(raw)) return null;
+  const value = text(raw);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return 'Please enter a valid date of birth.';
+  const [year, month, day] = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return 'Please enter a valid date of birth.';
+  }
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age -= 1;
+  if (age < MIN_AGE || age > MAX_AGE) {
+    return `Your age must be between ${MIN_AGE} and ${MAX_AGE} years.`;
+  }
+  return null;
+}
+
 function updateProfile(body) {
   const errors = {};
   const value = {};
@@ -60,8 +83,14 @@ function updateProfile(body) {
   if (typeof body.currentPassword === 'string' && body.currentPassword) {
     value.currentPassword = body.currentPassword;
   }
-  if (value.name === undefined && value.email === undefined) {
-    errors.name = 'Provide a new name or email address to update.';
+  // Date of birth: 'YYYY-MM-DD', or null / '' to remove it.
+  if (body.birthDate !== undefined) {
+    const problem = birthDateProblem(body.birthDate);
+    if (problem) errors.birthDate = problem;
+    else value.birthDate = isBlank(body.birthDate) ? null : text(body.birthDate);
+  }
+  if (value.name === undefined && value.email === undefined && value.birthDate === undefined) {
+    errors.name = 'Provide a new name, email address or date of birth to update.';
   }
 
   return { errors, value };

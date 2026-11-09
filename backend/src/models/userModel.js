@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 
-const PUBLIC_COLUMNS = 'id, name, email, role, is_verified, password_changed_at, created_at, updated_at';
+const PUBLIC_COLUMNS =
+  'id, name, email, role, is_verified, password_changed_at, birth_date, avatar_url, created_at, updated_at';
 
 function toUser(row) {
   if (!row) return null;
@@ -11,6 +12,8 @@ function toUser(row) {
     role: row.role,
     isVerified: row.is_verified,
     passwordChangedAt: row.password_changed_at,
+    birthDate: row.birth_date ?? null,
+    avatarUrl: row.avatar_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...(row.password !== undefined && { passwordHash: row.password }),
@@ -51,6 +54,23 @@ async function updateName(id, name, db = pool) {
   const { rows } = await db.query(
     `UPDATE users SET name = $2 WHERE id = $1 RETURNING ${PUBLIC_COLUMNS}`,
     [id, name]
+  );
+  return toUser(rows[0]);
+}
+
+// birthDate is 'YYYY-MM-DD' or null (removes it).
+async function updateBirthDate(id, birthDate, db = pool) {
+  const { rows } = await db.query(
+    `UPDATE users SET birth_date = $2 WHERE id = $1 RETURNING ${PUBLIC_COLUMNS}`,
+    [id, birthDate]
+  );
+  return toUser(rows[0]);
+}
+
+async function updateAvatar(id, avatarUrl, db = pool) {
+  const { rows } = await db.query(
+    `UPDATE users SET avatar_url = $2 WHERE id = $1 RETURNING ${PUBLIC_COLUMNS}`,
+    [id, avatarUrl]
   );
   return toUser(rows[0]);
 }
@@ -155,6 +175,8 @@ module.exports = {
   findByEmail,
   findByEmailWithPassword,
   updateName,
+  updateBirthDate,
+  updateAvatar,
   markVerified,
   updatePassword,
   promoteToAdmin,

@@ -5,6 +5,7 @@ const tokenModel = require('../models/verificationTokenModel');
 const { hashPassword, comparePassword, issueSession } = require('../utils/security');
 const { createToken, sendVerificationEmail } = require('../services/emailVerification');
 const { toPublicUser } = require('../views/userView');
+const { detectExtension, saveUpload, deleteUpload } = require('../utils/uploads');
 
 async function profilePayload(user) {
   const pending = await tokenModel.findPendingEmailChange(user.id, user.email);
@@ -30,7 +31,7 @@ async function getProfile(req, res) {
 // A new email address only replaces the current one after the user clicks the
 // link sent to it, so a typo can never lock them out of their account.
 async function updateProfile(req, res) {
-  const { name, email, currentPassword } = req.validated;
+  const { name, email, currentPassword, birthDate } = req.validated;
   const wantsNewEmail = email !== undefined && email !== req.user.email;
 
   if (wantsNewEmail) {
@@ -52,6 +53,9 @@ async function updateProfile(req, res) {
   let user = req.user;
   if (name !== undefined && name !== user.name) {
     user = await userModel.updateName(user.id, name);
+  }
+  if (birthDate !== undefined && birthDate !== user.birthDate) {
+    user = await userModel.updateBirthDate(user.id, birthDate);
   }
 
   let message = 'Your profile has been updated.';
@@ -87,4 +91,28 @@ async function changePassword(req, res) {
   });
 }
 
-module.exports = { getProfile, updateProfile, changePassword };
+// POST /api/profile/avatar — the image is the raw request body (JPG, PNG or
+// WebP, up to 2 MB). Replaces the previous picture, whose file is deleted.
+async function uploadAvatar(req, res) {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    throw new HttpError(400, 'Please choose a JPG, PNG or WebP image.', { code: 'INVALID_FILE' });
+  }
+  if (!['jpg', 'png', 'webp'].includes(detectExtension(req.body))) {
+    throw new HttpError(400, 'This file is not a JPG, PNG or WebP image.', { code: 'INVALID_FILE' });
+  }
+  const previous = req.user.avatarUrl;
+  const relative = await saveUpload('avatar', req.body);
+  const user = await userModel.updateAvatar(req.user.id, `${req.protocol}://${req.get('host')}${relative}`);
+  await deleteUpload(previous);
+  res.status(201).json({ ...(await profilePayload(user)), message: 'Your profile picture has been updated.' });
+}
+
+// DELETE /api/profile/avatar
+async function removeAvatar(req, res) {
+  const previous = req.user.avatarUrl;
+  const user = await userModel.updateAvatar(req.user.id, null);
+  await deleteUpload(previous);
+  res.json({ ...(await profilePayload(user)), message: 'Your profile picture has been removed.' });
+}
+
+module.exports = { getProfile, updateProfile, changePassword, uploadAvatar, removeAvatar };

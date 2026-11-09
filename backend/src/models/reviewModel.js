@@ -11,7 +11,7 @@ const REVIEW_SORTS = Object.keys(SORT_ORDERS);
 // $1 is always the viewer's id, used for "did I vote for this review?".
 const SELECT_REVIEW = `
   SELECT rv.id, rv.user_id, rv.book_id, rv.rating, rv.comment, rv.created_at, rv.updated_at,
-         u.name AS user_name,
+         u.name AS user_name, u.avatar_url AS user_avatar_url,
          (SELECT COUNT(*)::int FROM review_votes v WHERE v.review_id = rv.id) AS helpful_count,
          EXISTS (SELECT 1 FROM review_votes v WHERE v.review_id = rv.id AND v.user_id = $1) AS voted_by_me
   FROM reviews rv
@@ -24,6 +24,7 @@ function toReview(row) {
     bookId: row.book_id,
     userId: row.user_id,
     userName: row.user_name,
+    userAvatarUrl: row.user_avatar_url ?? null,
     rating: row.rating,
     comment: row.comment,
     helpfulCount: row.helpful_count ?? 0,

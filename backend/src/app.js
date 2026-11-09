@@ -27,6 +27,16 @@ app.use(
   })
 );
 
+// Profile pictures are public images too.
+app.use(
+  '/uploads/avatars',
+  express.static(path.join(UPLOAD_ROOT, 'avatars'), {
+    immutable: true,
+    maxAge: '30d',
+    setHeaders: (res) => res.set('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
+
 app.use('/api', routes);
 
 app.use(notFound);

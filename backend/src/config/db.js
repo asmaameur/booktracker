@@ -1,4 +1,8 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// DATE columns (such as users.birth_date) stay as 'YYYY-MM-DD' text instead of
+// becoming a JavaScript Date at local midnight, which could shift the day.
+types.setTypeParser(types.builtins.DATE, (value) => value);
 const env = require('./env');
 
 const pool = new Pool(

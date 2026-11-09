@@ -318,3 +318,16 @@ CREATE TABLE IF NOT EXISTS review_votes (
 );
 
 CREATE INDEX IF NOT EXISTS review_votes_user_id_idx ON review_votes (user_id);
+
+-- ===========================================================================
+-- Profile: date of birth (the age is calculated from it) and profile picture
+-- ===========================================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_birth_date_check;
+ALTER TABLE users ADD CONSTRAINT users_birth_date_check
+  CHECK (birth_date IS NULL OR (birth_date >= DATE '1900-01-01' AND birth_date <= CURRENT_DATE));
+
+COMMENT ON COLUMN users.birth_date IS 'Optional; only the account owner sees it. The age is calculated from it.';
+COMMENT ON COLUMN users.avatar_url IS 'Optional profile picture uploaded by the user (served from /uploads/avatars)';

@@ -16,6 +16,12 @@ const KINDS = {
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
     label: 'a JPG, PNG or WebP image',
   },
+  avatar: {
+    folder: 'avatars',
+    maxBytes: 2 * 1024 * 1024,
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    label: 'a JPG, PNG or WebP image',
+  },
   pdf: {
     folder: 'pdfs',
     maxBytes: 100 * 1024 * 1024,
@@ -25,7 +31,7 @@ const KINDS = {
 };
 
 // Matches the URLs this server hands out, e.g. http://host/uploads/covers/<32 hex>.jpg
-const UPLOAD_URL_PATTERN = /\/uploads\/(covers|pdfs)\/([a-f0-9]{32}\.(?:jpg|png|webp|pdf))$/;
+const UPLOAD_URL_PATTERN = /\/uploads\/(covers|avatars|pdfs)\/([a-f0-9]{32}\.(?:jpg|png|webp|pdf))$/;
 
 function ensureUploadFolders() {
   for (const { folder } of Object.values(KINDS)) {
@@ -80,4 +86,10 @@ async function removeUnusedUploads(urls, db = pool) {
   }
 }
 
-module.exports = { UPLOAD_ROOT, KINDS, ensureUploadFolders, detectExtension, saveUpload, localPathFor, removeUnusedUploads };
+// Deletes one uploaded file (for example a replaced profile picture).
+async function deleteUpload(url) {
+  const file = localPathFor(url);
+  if (file) await fs.promises.unlink(file).catch(() => {});
+}
+
+module.exports = { deleteUpload, UPLOAD_ROOT, KINDS, ensureUploadFolders, detectExtension, saveUpload, localPathFor, removeUnusedUploads };

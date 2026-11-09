@@ -46,9 +46,9 @@ Tokens last 1 day by default (`expiresAt` in the login response). Logging out is
 **Objects returned by the API**
 
 ```jsonc
-// User
+// User (birthDate and age are only sent to the account owner)
 { "id": 4, "name": "Bob Stone", "email": "bob@example.com", "role": "user",
-  "isVerified": true, "createdAt": "…", "updatedAt": "…" }
+  "isVerified": true, "birthDate": "1998-03-14", "age": 28, "avatarUrl": "http://localhost:4000/uploads/avatars/…jpg", "createdAt": "…", "updatedAt": "…" }
 
 // Book
 { "id": 5, "title": "Dracula", "author": "Bram Stoker", "description": "…",
@@ -198,13 +198,16 @@ Also the way to restore a session when the app loads: if it fails with 401, the 
 
 ### `PATCH /profile`
 
-Send the fields to change. Changing the email requires the current password.
+Send the fields to change. Changing the email requires the current password. `birthDate` is optional (`"YYYY-MM-DD"`, age between 5 and 120); send `null` or `""` to remove it. The response then includes `birthDate` and the calculated `age`, which only the account owner ever receives (admin lists leave them out).
 
 ```json
 { "name": "Bob A. Stone" }
 ```
 ```json
 { "email": "bob.new@example.com", "currentPassword": "BobPass123" }
+```
+```json
+{ "birthDate": "1998-03-14" }
 ```
 
 **200**
@@ -223,6 +226,12 @@ Errors:
 - 400 `VALIDATION_ERROR`: includes a missing `currentPassword` for an email change.
 - 400 `INCORRECT_PASSWORD`
 - 409 `EMAIL_TAKEN`
+
+### `POST /profile/avatar` and `DELETE /profile/avatar`
+
+Upload a profile picture: send the image itself as the body with its `Content-Type` (`image/jpeg`, `image/png` or `image/webp`, up to 2 MB). It replaces the previous picture, whose file is deleted. **201** `{ user, pendingEmail, message }` with `user.avatarUrl` set. `DELETE` removes the picture (**200**, `avatarUrl: null`). Errors: 400 `INVALID_FILE`, 413 `FILE_TOO_LARGE`.
+
+Profile pictures are public images under `/uploads/avatars/`; reviews include the reviewer's `userAvatarUrl`.
 
 ### `PUT /profile/password`
 
