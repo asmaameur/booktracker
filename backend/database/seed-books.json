@@ -1,0 +1,272 @@
+[
+  {
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "description": "Elizabeth Bennet, quick-witted and quick to judge, meets the proud Mr Darcy at a country ball. Austen's comedy of manners follows how first impressions give way, slowly and with much sharp dialogue, to understanding.",
+    "genre": "Romance",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/pride-and-prejudice.pdf",
+    "publicationYear": 1813
+  },
+  {
+    "title": "Jane Eyre",
+    "author": "Charlotte Brontë",
+    "description": "An orphaned governess takes a post at Thornfield Hall and falls in love with its brooding master, Mr Rochester, before a secret hidden in the house forces her to choose between love and self-respect.",
+    "genre": "Romance",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141441146-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/jane-eyre.pdf",
+    "publicationYear": 1847
+  },
+  {
+    "title": "Wuthering Heights",
+    "author": "Emily Brontë",
+    "description": "On the Yorkshire moors, the foundling Heathcliff and Catherine Earnshaw form a bond so fierce that its betrayal echoes through two generations of two families.",
+    "genre": "Horror",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439556-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/wuthering-heights.pdf",
+    "publicationYear": 1847
+  },
+  {
+    "title": "Frankenstein",
+    "author": "Mary Shelley",
+    "description": "Victor Frankenstein gives life to a creature assembled from the dead, then abandons it. Shelley's novel asks what we owe to what we create, and is often called the first work of science fiction.",
+    "genre": "Science Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439471-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/frankenstein.pdf",
+    "publicationYear": 1818
+  },
+  {
+    "title": "Dracula",
+    "author": "Bram Stoker",
+    "description": "Told through letters, diaries and newspaper cuttings, the story follows a young solicitor's visit to Transylvania and the Count who follows him back to England.",
+    "genre": "Horror",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439846-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/dracula.pdf",
+    "publicationYear": 1897
+  },
+  {
+    "title": "The Picture of Dorian Gray",
+    "author": "Oscar Wilde",
+    "description": "A beautiful young man wishes that his portrait would age in his place. As Dorian pursues every pleasure, the painting hidden in his attic records the cost.",
+    "genre": "Horror",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439570-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-picture-of-dorian-gray.pdf",
+    "publicationYear": 1890
+  },
+  {
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "description": "Nick Carraway, newly arrived on Long Island, is drawn into the glittering parties of his neighbour Jay Gatsby and the longing that drives them, in this portrait of the Jazz Age.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-great-gatsby.pdf",
+    "publicationYear": 1925
+  },
+  {
+    "title": "Crime and Punishment",
+    "author": "Fyodor Dostoevsky",
+    "description": "A destitute former student in St Petersburg commits a murder he believes he can justify, then finds himself pursued by his own conscience and a patient detective.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780140449136-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/crime-and-punishment.pdf",
+    "publicationYear": 1866
+  },
+  {
+    "title": "Moby-Dick",
+    "author": "Herman Melville",
+    "description": "Ishmael signs on to the whaler Pequod, whose captain, Ahab, is bent on revenge against the white whale that took his leg. An adventure, an encyclopedia of the sea and a meditation on obsession.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780142437247-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/moby-dick.pdf",
+    "publicationYear": 1851
+  },
+  {
+    "title": "Alice's Adventures in Wonderland",
+    "author": "Lewis Carroll",
+    "description": "Alice follows a white rabbit down a hole into a world of shifting sizes, mad tea parties and a queen who settles everything by ordering heads off.",
+    "genre": "Fantasy",
+    "coverImageUrl": "https://covers.openlibrary.org/b/isbn/9780141439761-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/alices-adventures-in-wonderland.pdf",
+    "publicationYear": 1865
+  },
+  {
+    "title": "Great Expectations",
+    "author": "Charles Dickens",
+    "description": "The orphan Pip, raised by his harsh sister on the Kent marshes, receives a fortune from a mysterious benefactor and leaves for London to become a gentleman. Dickens follows his ambitions, his love for the cold Estella, and the painful lessons about loyalty and gratitude that come with them.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/13322313-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/great-expectations.pdf",
+    "publicationYear": 1861
+  },
+  {
+    "title": "Little Women",
+    "author": "Louisa May Alcott",
+    "description": "Meg, Jo, Beth and Amy March grow up in New England while their father is away at the Civil War. Through poverty, ambition, friendship and loss, the four sisters each find their own way into adulthood.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/8775559-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/little-women.pdf",
+    "publicationYear": 1868
+  },
+  {
+    "title": "Persuasion",
+    "author": "Jane Austen",
+    "description": "Eight years ago Anne Elliot was persuaded to break off her engagement to the penniless naval officer Frederick Wentworth. Now he returns, rich and admired, and Anne must face the man she never stopped loving in Austen's most tender novel.",
+    "genre": "Romance",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/12824691-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/persuasion.pdf",
+    "publicationYear": 1817
+  },
+  {
+    "title": "Sense and Sensibility",
+    "author": "Jane Austen",
+    "description": "After their father's death leaves them with little money, the sensible Elinor and the passionate Marianne Dashwood must navigate love, heartbreak and society, each learning something from the other's way of feeling.",
+    "genre": "Romance",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/9278292-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/sense-and-sensibility.pdf",
+    "publicationYear": 1811
+  },
+  {
+    "title": "The Hound of the Baskervilles",
+    "author": "Arthur Conan Doyle",
+    "description": "A legend tells of a monstrous hound that haunts the Baskerville family on the bleak Devon moors. When Sir Charles Baskerville is found dead, Sherlock Holmes and Dr Watson must protect his heir and uncover the truth behind the curse.",
+    "genre": "Mystery",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/8063264-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-hound-of-the-baskervilles.pdf",
+    "publicationYear": 1902
+  },
+  {
+    "title": "A Study in Scarlet",
+    "author": "Arthur Conan Doyle",
+    "description": "The first meeting of Sherlock Holmes and Dr Watson. A man is found dead in an empty house in Brixton with the word \"RACHE\" written in blood on the wall, and Holmes's method of deduction is put to the test for the first time.",
+    "genre": "Mystery",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/13405534-L.jpg",
+    "pdfUrl": "https://sherlock-holm.es/stories/pdf/a4/1-sided/stud.pdf",
+    "publicationYear": 1887
+  },
+  {
+    "title": "The Thirty-Nine Steps",
+    "author": "John Buchan",
+    "description": "Richard Hannay returns to London bored with life, until a stranger who has uncovered a plot against Britain is murdered in his flat. Wanted by the police and hunted by German spies, Hannay flees across the Scottish moors in a race against time.",
+    "genre": "Thriller",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/93020-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-thirty-nine-steps.pdf",
+    "publicationYear": 1915
+  },
+  {
+    "title": "The Scarlet Pimpernel",
+    "author": "Baroness Orczy",
+    "description": "During the Reign of Terror, a mysterious Englishman known only as the Scarlet Pimpernel rescues French aristocrats from the guillotine. The French agent Chauvelin is determined to unmask him, and forces the beautiful Marguerite Blakeney to help.",
+    "genre": "Thriller",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/479102-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-scarlet-pimpernel.pdf",
+    "publicationYear": 1905
+  },
+  {
+    "title": "The Strange Case of Dr Jekyll and Mr Hyde",
+    "author": "Robert Louis Stevenson",
+    "description": "The London lawyer Utterson investigates the strange connection between his respected friend Dr Henry Jekyll and the brutal, repellent Edward Hyde. A short, chilling study of the darkness hidden inside every person.",
+    "genre": "Horror",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/295773-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-strange-case-of-dr-jekyll-and-mr-hyde.pdf",
+    "publicationYear": 1886
+  },
+  {
+    "title": "The Legend of Sleepy Hollow",
+    "author": "Washington Irving",
+    "description": "In a sleepy Dutch village on the Hudson, the superstitious schoolmaster Ichabod Crane competes for the hand of Katrina Van Tassel, until one night he meets the Headless Horseman on the lonely road home.",
+    "genre": "Horror",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/8243083-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-legend-of-sleepy-hollow.pdf",
+    "publicationYear": 1820
+  },
+  {
+    "title": "The Time Machine",
+    "author": "H. G. Wells",
+    "description": "A Victorian inventor travels to the year 802,701 and finds humanity split into two species: the gentle Eloi above ground and the sinister Morlocks below. The novella that made time travel a staple of science fiction.",
+    "genre": "Science Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/9009316-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-time-machine.pdf",
+    "publicationYear": 1895
+  },
+  {
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "description": "Martian cylinders land in the English countryside and unleash tripod fighting machines and a deadly heat-ray. A narrator struggles to survive as civilisation collapses around him in one of the first alien invasion stories.",
+    "genre": "Science Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/36314-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-war-of-the-worlds.pdf",
+    "publicationYear": 1898
+  },
+  {
+    "title": "The Jungle Book",
+    "author": "Rudyard Kipling",
+    "description": "Mowgli, a boy raised by wolves in the Indian jungle, learns the law of the jungle from Baloo the bear and Bagheera the panther while the tiger Shere Khan waits for his chance. The collection also includes \"Rikki-Tikki-Tavi\" and other tales.",
+    "genre": "Fantasy",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/3344204-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-jungle-book.pdf",
+    "publicationYear": 1894
+  },
+  {
+    "title": "Grimms' Fairy Tales",
+    "author": "Jacob and Wilhelm Grimm",
+    "description": "The German folk tales collected by the Brothers Grimm, including Hansel and Gretel, Rapunzel, Snow White, Rumpelstiltskin and Cinderella: stories of witches, wolves, clever children and enchanted forests.",
+    "genre": "Fantasy",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/11639412-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/grimms-fairy-tales.pdf",
+    "publicationYear": 1812
+  },
+  {
+    "title": "The Prince",
+    "author": "Niccolò Machiavelli",
+    "description": "Written in Renaissance Florence, Machiavelli's famous treatise on how rulers gain and keep power draws on the history of Italian states, popes and ancient Rome, and gives a frank view of politics in his time.",
+    "genre": "History",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/12726168-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/the-prince.pdf",
+    "publicationYear": 1532
+  },
+  {
+    "title": "Narrative of the Life of Frederick Douglass",
+    "author": "Frederick Douglass",
+    "description": "Frederick Douglass tells his own story: his childhood in slavery in Maryland, how he secretly taught himself to read, and his escape to freedom. A powerful firsthand account that became a key text of the abolitionist movement.",
+    "genre": "Biography",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/8247724-L.jpg",
+    "pdfUrl": "https://archive.org/download/narrativeoflife1845doug/narrativeoflife1845doug.pdf",
+    "publicationYear": 1845
+  },
+  {
+    "title": "Meditations",
+    "author": "Marcus Aurelius",
+    "description": "The private notes of a Roman emperor, written to himself during military campaigns. Marcus Aurelius reflects on self-discipline, duty, accepting what cannot be changed and living well: Stoic advice that still reads as fresh today.",
+    "genre": "Self-development",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/211529-L.jpg",
+    "pdfUrl": "https://archive.org/download/meditationsofmar00marc_0/meditationsofmar00marc_0.pdf",
+    "publicationYear": 180
+  },
+  {
+    "title": "My Inventions",
+    "author": "Nikola Tesla",
+    "description": "Nikola Tesla describes how he imagined and built his inventions, from the alternating current motor to wireless power transmission, and how his unusual habits of mind shaped his work as an engineer.",
+    "genre": "Technology",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/702420-L.jpg",
+    "pdfUrl": "https://archive.org/download/my-inventions-nikola-tesla/My%20Inventions%20-%20Nikola%20Tesla_text.pdf",
+    "publicationYear": 1919
+  },
+  {
+    "title": "On the Origin of Species",
+    "author": "Charles Darwin",
+    "description": "Darwin presents the theory of evolution by natural selection, supported by observations from his voyage on HMS Beagle, from breeders and from fossils. The book that founded modern biology.",
+    "genre": "Educational",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/7153600-L.jpg",
+    "pdfUrl": "https://archive.org/download/agt-darwinorigin-3e0440/darwinorigin.pdf",
+    "publicationYear": 1859
+  },
+  {
+    "title": "Heart of Darkness",
+    "author": "Joseph Conrad",
+    "description": "Charles Marlow travels up the Congo River in search of Kurtz, an ivory trader who has gained terrible power over the local people. A haunting short novel about colonialism, greed and the darkness within.",
+    "genre": "Fiction",
+    "coverImageUrl": "https://covers.openlibrary.org/b/id/12307847-L.jpg",
+    "pdfUrl": "https://www.planetebook.com/free-ebooks/heart-of-darkness.pdf",
+    "publicationYear": 1899
+  }
+]

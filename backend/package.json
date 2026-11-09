@@ -1,0 +1,31 @@
+{
+  "name": "booktracker-backend",
+  "version": "1.0.0",
+  "description": "REST API for BookTracker, a digital library and reading tracker",
+  "private": true,
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "node scripts/initDb.js",
+    "db:seed": "node scripts/seedDb.js",
+    "db:create-admin": "node scripts/createAdmin.js",
+    "test": "node --test --test-concurrency=1"
+  },
+  "author": "Asmaa Meur",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.3",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.3.1",
+    "pg": "^8.23.1"
+  }
+}
