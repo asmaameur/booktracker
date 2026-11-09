@@ -3,9 +3,11 @@ import { ArrowRight, BookMarked, BookOpen, BookOpenCheck, Bookmark, Library } fr
 import Button from '../../components/ui/Button';
 import BookCard from '../../components/books/BookCard';
 import BookCover from '../../components/books/BookCover';
+import Recommendations from '../../components/books/Recommendations';
+import ReadingGoal from '../../components/books/ReadingGoal';
 import { PageHeader, ProgressMeter, StatTile } from '../../components/ui/Display';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { booksApi, libraryApi } from '../../api';
+import { booksApi, libraryApi, statsApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { useDocumentTitle } from '../../hooks/misc';
@@ -52,6 +54,7 @@ export default function ReaderDashboard() {
   const { user } = useAuth();
   const library = useApi((signal) => libraryApi.list(undefined, signal), []);
   const recent = useApi((signal) => booksApi.list({ sort: 'newest', limit: 6 }, signal), []);
+  const stats = useApi((signal) => statsApi.reading(undefined, signal), []);
 
   const items = library.data?.items ?? [];
   const counts = library.data?.counts;
@@ -98,6 +101,17 @@ export default function ReaderDashboard() {
             </section>
           )}
 
+          {stats.data && (
+            <section className="dashboard-section" aria-label="Reading goal">
+              <ReadingGoal stats={stats.data.stats} onChange={(next) => stats.setData({ stats: next })} />
+              <p className="goal__more">
+                <Link to="/app/stats" className="text-link">
+                  See my reading statistics
+                </Link>
+              </p>
+            </section>
+          )}
+
           <section className="dashboard-section" aria-label="Library summary">
             <div className="stat-row">
               <StatTile icon={Library} label="In my library" value={counts?.total ?? 0} />
@@ -124,6 +138,8 @@ export default function ReaderDashboard() {
           )}
         </>
       )}
+
+      <Recommendations />
 
       <section className="dashboard-section" aria-labelledby="new-title">
         <div className="section-row">

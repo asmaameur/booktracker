@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import BookCover from './BookCover';
+import { RatingSummary } from './Rating';
 import { StatusBadge } from '../ui/Display';
 
 export default function BookCard({ book, to, status, children }) {
@@ -18,9 +19,12 @@ export default function BookCard({ book, to, status, children }) {
           <Link to={to}>{book.title}</Link>
         </h3>
         <p className="book-card__author">{book.author}</p>
-        {(book.category || book.publicationYear) && (
+        {book.ratingCount !== undefined && (
+          <RatingSummary averageRating={book.averageRating} ratingCount={book.ratingCount} compact />
+        )}
+        {(book.genre || book.publicationYear) && (
           <div className="book-card__meta">
-            {book.category && <span className="tag">{book.category}</span>}
+            {book.genre && <span className="tag">{book.genre}</span>}
             {book.publicationYear && <span className="muted tabular">{book.publicationYear}</span>}
           </div>
         )}

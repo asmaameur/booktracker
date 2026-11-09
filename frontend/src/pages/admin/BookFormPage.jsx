@@ -3,15 +3,17 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import BookCover from '../../components/books/BookCover';
-import { TextAreaField, TextField } from '../../components/ui/FormFields';
+import UploadButton from '../../components/books/UploadButton';
+import { SelectField, TextAreaField, TextField } from '../../components/ui/FormFields';
 import { BackLink, PageHeader } from '../../components/ui/Display';
 import { Alert, ErrorState, LoadingState } from '../../components/ui/States';
-import { booksApi } from '../../api';
+import { booksApi, genresApi } from '../../api';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
 import { useDocumentTitle } from '../../hooks/misc';
+import { plural } from '../../utils/format';
 
-const EMPTY = { title: '', author: '', category: '', publicationYear: '', coverImageUrl: '', pdfUrl: '', description: '' };
+const EMPTY = { title: '', author: '', genre: '', publicationYear: '', coverImageUrl: '', pdfUrl: '', description: '' };
 const DESCRIPTION_MAX = 5000;
 
 function isHttpUrl(value) {
@@ -23,7 +25,7 @@ function isHttpUrl(value) {
   }
 }
 
-// Mirrors the backend rules (backend/src/validators/bookValidators.js).
+// Mirrors the backend rules (backend/src/middleware/validators/bookValidators.js).
 function validate(values) {
   const errors = {};
   const maxYear = new Date().getFullYear() + 1;
@@ -31,7 +33,7 @@ function validate(values) {
   else if (values.title.trim().length > 255) errors.title = 'Title must be 255 characters or fewer.';
   if (!values.author.trim()) errors.author = 'Author is required.';
   else if (values.author.trim().length > 255) errors.author = 'Author must be 255 characters or fewer.';
-  if (values.category.trim().length > 100) errors.category = 'Category must be 100 characters or fewer.';
+  if (!values.genre) errors.genre = 'Please choose a genre.';
   if (values.publicationYear !== '') {
     const year = Number(values.publicationYear);
     if (!Number.isInteger(year) || year < 1 || year > maxYear) {
@@ -52,7 +54,7 @@ function toForm(book) {
   return {
     title: book.title ?? '',
     author: book.author ?? '',
-    category: book.category ?? '',
+    genre: book.genre ?? '',
     publicationYear: book.publicationYear ? String(book.publicationYear) : '',
     coverImageUrl: book.coverImageUrl ?? '',
     pdfUrl: book.pdfUrl ?? '',
@@ -64,7 +66,7 @@ function toPayload(values) {
   return {
     title: values.title.trim(),
     author: values.author.trim(),
-    category: values.category.trim(),
+    genre: values.genre,
     publicationYear: values.publicationYear === '' ? null : Number(values.publicationYear),
     coverImageUrl: values.coverImageUrl.trim(),
     pdfUrl: values.pdfUrl.trim(),
@@ -80,7 +82,7 @@ export default function BookFormPage() {
   const toast = useToast();
 
   const existing = useApi((signal) => (isEdit ? booksApi.get(id, signal) : Promise.resolve(null)), [id]);
-  const categories = useApi((signal) => booksApi.categories(signal), []);
+  const genres = useApi((signal) => genresApi.list(signal), []);
 
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
@@ -108,8 +110,11 @@ export default function BookFormPage() {
     setSaving(true);
     try {
       const payload = toPayload(values);
-      const { book, message } = isEdit ? await booksApi.update(id, payload) : await booksApi.create(payload);
-      toast.success(message, isEdit ? 'Changes saved' : 'Book added');
+      const { book, message, notifiedReaders } = isEdit
+        ? await booksApi.update(id, payload)
+        : await booksApi.create(payload);
+      const notified = notifiedReaders ? ` ${plural(notifiedReaders, 'reader')} notified.` : '';
+      toast.success(message + notified, isEdit ? 'Changes saved' : 'Book added');
       navigate(`/admin/books/${book.id}`);
     } catch (error) {
       setSaving(false);
@@ -141,7 +146,7 @@ export default function BookFormPage() {
       <PageHeader
         eyebrow={isEdit ? 'Edit book' : 'New book'}
         title={isEdit ? existing.data.book.title : 'Add a book to the catalogue'}
-        description="Title and author are required. Readers can open the book in the reader once it has a PDF link."
+        description="Title and author are required. Readers can open the book in the reader once it has a PDF."
       />
 
       <div className="book-form">
@@ -154,22 +159,18 @@ export default function BookFormPage() {
           </div>
 
           <div className="form-row">
-            <TextField
-              id="book-category"
-              label="Category"
-              optional
-              list="category-options"
-              value={values.category}
-              onChange={update('category')}
-              error={errors.category}
-              hint="Pick an existing category or type a new one."
-              maxLength={100}
+            <SelectField
+              id="book-genre"
+              label="Genre"
+              value={values.genre}
+              onChange={update('genre')}
+              error={errors.genre}
+              hint={genres.error ? 'Genres could not be loaded. Refresh the page to try again.' : 'Used for the genre filter and for recommendations.'}
+              options={[
+                { value: '', label: genres.data ? 'Choose a genre' : 'Loading genres…' },
+                ...(genres.data?.genres ?? []).map((g) => ({ value: g.name, label: g.name })),
+              ]}
             />
-            <datalist id="category-options">
-              {(categories.data?.categories ?? []).map((c) => (
-                <option key={c.name} value={c.name} />
-              ))}
-            </datalist>
             <TextField
               id="book-publicationYear"
               label="Publication year"
@@ -181,28 +182,42 @@ export default function BookFormPage() {
             />
           </div>
 
-          <TextField
-            id="book-coverImageUrl"
-            label="Cover image URL"
-            optional
-            type="url"
-            placeholder="https://…/cover.jpg"
-            value={values.coverImageUrl}
-            onChange={update('coverImageUrl')}
-            error={errors.coverImageUrl}
-            hint="A direct link to a JPG or PNG image. The preview updates as you type."
-          />
-          <TextField
-            id="book-pdfUrl"
-            label="PDF URL"
-            optional
-            type="url"
-            placeholder="https://…/book.pdf"
-            value={values.pdfUrl}
-            onChange={update('pdfUrl')}
-            error={errors.pdfUrl}
-            hint="A direct link to the PDF file. Readers open it inside BookTracker."
-          />
+          <div className="field-group">
+            <TextField
+              id="book-coverImageUrl"
+              label="Cover image"
+              optional
+              type="url"
+              placeholder="https://…/cover.jpg"
+              value={values.coverImageUrl}
+              onChange={update('coverImageUrl')}
+              error={errors.coverImageUrl}
+              hint="Upload an image, or paste a direct link to one. The preview updates as you type."
+            />
+            <UploadButton
+              kind="cover"
+              disabled={saving}
+              onUploaded={(url) => update('coverImageUrl')({ target: { value: url } })}
+            />
+          </div>
+          <div className="field-group">
+            <TextField
+              id="book-pdfUrl"
+              label="PDF"
+              optional
+              type="url"
+              placeholder="https://…/book.pdf"
+              value={values.pdfUrl}
+              onChange={update('pdfUrl')}
+              error={errors.pdfUrl}
+              hint="Upload the PDF, or paste a direct link to one. Readers open it inside BookTracker."
+            />
+            <UploadButton
+              kind="pdf"
+              disabled={saving}
+              onUploaded={(url) => update('pdfUrl')({ target: { value: url } })}
+            />
+          </div>
           <TextAreaField
             id="book-description"
             label="Description"
@@ -231,9 +246,9 @@ export default function BookFormPage() {
           </div>
           <p className="book-form__preview-title">{preview.title}</p>
           <p className="muted">{preview.author}</p>
-          {(values.category.trim() || values.publicationYear) && (
+          {(values.genre || values.publicationYear) && (
             <p className="book-card__meta">
-              {values.category.trim() && <span className="tag">{values.category.trim()}</span>}
+              {values.genre && <span className="tag">{values.genre}</span>}
               {values.publicationYear && <span className="muted tabular">{values.publicationYear}</span>}
             </p>
           )}

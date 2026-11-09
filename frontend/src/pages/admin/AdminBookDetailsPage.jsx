@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import BookCover from '../../components/books/BookCover';
+import ReviewsSection from '../../components/books/ReviewsSection';
+import { RatingSummary } from '../../components/books/Rating';
 import DeleteBookDialog from '../../components/books/DeleteBookDialog';
 import { BackLink } from '../../components/ui/Display';
 import { Alert, ErrorState, LoadingState } from '../../components/ui/States';
@@ -33,6 +35,8 @@ export default function AdminBookDetailsPage() {
   }
 
   const { book, readerCount } = details.data;
+  const setSummary = ({ averageRating, ratingCount }) =>
+    details.setData((data) => ({ ...data, book: { ...data.book, averageRating, ratingCount } }));
 
   return (
     <>
@@ -43,9 +47,12 @@ export default function AdminBookDetailsPage() {
         </div>
 
         <div className="book-detail__body">
-          {book.category && <span className="eyebrow">{book.category}</span>}
+          <span className="eyebrow">{book.genre}</span>
           <h1 className="book-detail__title">{book.title}</h1>
           <p className="book-detail__author">by {book.author}</p>
+          <a href="#reviews-title" className="book-detail__rating">
+            <RatingSummary averageRating={book.averageRating} ratingCount={book.ratingCount} />
+          </a>
 
           <div className="book-detail__admin-actions">
             <Button as={Link} to={`/admin/books/${book.id}/edit`} icon={Pencil}>
@@ -95,9 +102,13 @@ export default function AdminBookDetailsPage() {
             )}
           </section>
 
+          <ReviewsSection bookId={book.id} canModerate onSummaryChange={setSummary} />
+
           <section className="book-detail__section panel panel__body">
             <h2 className="book-detail__section-title">Record</h2>
             <dl className="details-list">
+              <dt>Genre</dt>
+              <dd>{book.genre}</dd>
               <dt>Book ID</dt>
               <dd className="tabular">{book.id}</dd>
               <dt>Added</dt>

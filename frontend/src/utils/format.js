@@ -12,6 +12,7 @@ export const BOOK_SORTS = [
   { value: 'author', label: 'Author (A–Z)' },
   { value: 'year', label: 'Publication year' },
   { value: 'oldest', label: 'First added' },
+  { value: 'rating', label: 'Highest rated' },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });

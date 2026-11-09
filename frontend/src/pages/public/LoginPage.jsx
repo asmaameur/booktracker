@@ -103,6 +103,11 @@ export default function LoginPage() {
           onChange={update('password')}
           error={errors.password}
         />
+        <p className="auth-card__forgot">
+          <Link to="/forgot-password" state={{ email: values.email.trim() }} className="text-link">
+            Forgot your password?
+          </Link>
+        </p>
         <Button type="submit" size="lg" block loading={submitting}>
           Log in
         </Button>

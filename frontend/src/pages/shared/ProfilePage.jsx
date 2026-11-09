@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import { PasswordField, TextField } from '../../components/ui/FormFields';
 import { PageHeader } from '../../components/ui/Display';
 import { Alert } from '../../components/ui/States';
+import FavouriteGenresForm from '../../components/books/FavouriteGenres';
 import { profileApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -247,7 +248,11 @@ export default function ProfilePage() {
       <PageHeader
         eyebrow={user.role === 'admin' ? 'Administrator account' : 'Reader account'}
         title="Profile"
-        description="Manage your name, email address and password."
+        description={
+          user.role === 'admin'
+            ? 'Manage your name, email address and password.'
+            : 'Manage your name, email address, favourite genres and password.'
+        }
       />
 
       <div className="profile">
@@ -274,6 +279,21 @@ export default function ProfilePage() {
             </Alert>
           )}
           <DetailsForm user={user} onSaved={onSaved} />
+          {user.role === 'user' && (
+            <section className="panel" aria-labelledby="genres-title">
+              <div className="panel__header">
+                <div>
+                  <h2 id="genres-title" className="panel__title">
+                    Favourite genres
+                  </h2>
+                  <p className="panel__subtitle">Your recommendations on the dashboard start with these genres.</p>
+                </div>
+              </div>
+              <div className="panel__body">
+                <FavouriteGenresForm />
+              </div>
+            </section>
+          )}
           <PasswordForm />
         </div>
       </div>

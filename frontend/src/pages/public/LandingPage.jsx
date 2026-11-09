@@ -53,7 +53,7 @@ const FEATURES = [
     numeral: 'I',
     icon: BookOpen,
     title: 'Browse the catalogue',
-    text: "Search by title or author, filter by category, and open each book's page for its description, year and cover.",
+    text: "Search by title or author, filter by genre, and open each book's page for its description, year and cover.",
   },
   {
     numeral: 'II',

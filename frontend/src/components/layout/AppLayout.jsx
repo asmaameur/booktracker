@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   BookOpen,
   BookPlus,
+  ChartColumn,
   Library,
   LayoutDashboard,
   LibraryBig,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Logo, ThemeToggle } from './Brand';
+import NotificationBell from './NotificationBell';
 import { initials } from '../../utils/format';
 
 // `activeWhen` keeps a section highlighted on its sub-pages (a book's details
@@ -28,6 +30,7 @@ const NAVIGATION = {
       activeWhen: (p) => p.startsWith('/app/catalogue') || p.startsWith('/app/books'),
     },
     { to: '/app/library', label: 'My Library', icon: Library, activeWhen: (p) => p.startsWith('/app/library') },
+    { to: '/app/stats', label: 'My reading', icon: ChartColumn, activeWhen: (p) => p.startsWith('/app/stats') },
     { to: '/app/profile', label: 'Profile', icon: UserRound, activeWhen: (p) => p.startsWith('/app/profile') },
   ],
   admin: [
@@ -144,6 +147,7 @@ export default function AppLayout({ variant }) {
 
           <div className="app-header__end">
             <ThemeToggle />
+            <NotificationBell variant={variant} />
             <Link to={`${home}/profile`} className="user-chip" aria-label={`Your profile (${user?.name})`}>
               <span className="avatar" aria-hidden="true">
                 {initials(user?.name)}

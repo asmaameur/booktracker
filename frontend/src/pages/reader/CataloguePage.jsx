@@ -5,7 +5,7 @@ import BookCard from '../../components/books/BookCard';
 import BookFilters from '../../components/books/BookFilters';
 import { PageHeader, Pagination } from '../../components/ui/Display';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { booksApi, libraryApi } from '../../api';
+import { booksApi, genresApi, libraryApi } from '../../api';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
 import { useBookQuery } from '../../hooks/useBookQuery';
@@ -18,13 +18,13 @@ export default function CataloguePage() {
   useDocumentTitle('Catalogue');
   const toast = useToast();
   const query = useBookQuery();
-  const { search, category, sort, page } = query;
+  const { search, genre, sort, page } = query;
   const [adding, setAdding] = useState(null);
 
-  const categories = useApi((signal) => booksApi.categories(signal), []);
+  const genres = useApi((signal) => genresApi.list(signal), []);
   const books = useApi(
-    (signal) => booksApi.list({ search, category, sort, page, limit: PAGE_SIZE }, signal),
-    [search, category, sort, page]
+    (signal) => booksApi.list({ search, genre, sort, page, limit: PAGE_SIZE }, signal),
+    [search, genre, sort, page]
   );
   const library = useApi((signal) => libraryApi.list(undefined, signal), []);
 
@@ -53,15 +53,15 @@ export default function CataloguePage() {
       <PageHeader
         eyebrow="The collection"
         title="Catalogue"
-        description="Every book available in BookTracker. Search, filter by category, and add what tempts you to your library."
+        description="Every book available in BookTracker. Search, filter by genre, and add what tempts you to your library."
       />
 
       <BookFilters
         search={query.searchInput}
         onSearchChange={query.setSearchInput}
-        category={category}
-        onCategoryChange={query.setCategory}
-        categories={categories.data?.categories ?? []}
+        genre={genre}
+        onGenreChange={query.setGenre}
+        genres={genres.data?.genres ?? []}
         sort={sort}
         onSortChange={query.setSort}
       />
@@ -74,7 +74,7 @@ export default function CataloguePage() {
         <EmptyState
           icon={SearchX}
           title={query.isFiltered ? 'No books match your search' : 'The catalogue is empty'}
-          text={query.isFiltered ? 'Try another title, author or category.' : 'Books added by the librarian will appear here.'}
+          text={query.isFiltered ? 'Try another title, author or genre.' : 'Books added by the librarian will appear here.'}
         >
           {query.isFiltered && (
             <Button variant="secondary" onClick={query.clear}>
@@ -87,7 +87,7 @@ export default function CataloguePage() {
           <p className="results-summary" aria-live="polite">
             {plural(total, 'book')}
             {search && ` matching “${search}”`}
-            {category && ` in ${category}`}
+            {genre && ` in ${genre}`}
           </p>
           <div className="book-grid">
             {books.data.books.map((book) => {

@@ -42,6 +42,43 @@ export function SegmentedBar({ parts, label }) {
   );
 }
 
+// Vertical bars in a fixed order (months, days), one colour, for a single
+// series. Each bar shows its exact value on hover/focus; the hidden table
+// gives every value to screen readers. Zero values keep a thin baseline mark.
+export function ColumnBars({ rows, caption, valueLabel, highlight }) {
+  const max = Math.max(1, ...rows.map((row) => row.value));
+  return (
+    <figure className="columns">
+      <div className="columns__plot" aria-hidden="true">
+        {rows.map((row, index) => (
+          <div
+            key={row.label}
+            className={`columns__col ${index === highlight ? 'columns__col--current' : ''}`}
+            title={`${row.fullLabel || row.label}: ${formatNumber(row.value)} ${valueLabel}`}
+          >
+            <span className="columns__tip">{formatNumber(row.value)}</span>
+            <span className="columns__bar" style={{ height: `${(row.value / max) * 100}%` }} />
+            <span className="columns__label">{row.label}</span>
+          </div>
+        ))}
+      </div>
+      <table className="visually-hidden">
+        <caption>{caption}</caption>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <th scope="row">{row.fullLabel || row.label}</th>
+              <td>
+                {formatNumber(row.value)} {valueLabel}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
+  );
+}
+
 // Ranked horizontal bars, largest first, one colour. Built as a table so
 // every value is readable without hovering and by screen readers.
 export function RankedBars({ rows, caption, labelHeader, valueHeader }) {

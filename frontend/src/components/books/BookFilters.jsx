@@ -1,7 +1,15 @@
 import { Search } from 'lucide-react';
 import { BOOK_SORTS } from '../../utils/format';
 
-export default function BookFilters({ search, onSearchChange, category, onCategoryChange, categories, sort, onSortChange }) {
+export default function BookFilters({
+  search,
+  onSearchChange,
+  genre,
+  onGenreChange,
+  genres,
+  sort,
+  onSortChange,
+}) {
   return (
     <div className="filters" role="search">
       <div className="filters__search field__control">
@@ -19,24 +27,21 @@ export default function BookFilters({ search, onSearchChange, category, onCatego
           autoComplete="off"
         />
       </div>
-      <div>
-        <label htmlFor="book-category" className="visually-hidden">
-          Category
-        </label>
-        <select
-          id="book-category"
-          className="select"
-          value={category}
-          onChange={(event) => onCategoryChange(event.target.value)}
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c.name} value={c.name}>
-              {c.name} ({c.count})
-            </option>
-          ))}
-        </select>
-      </div>
+      {genres && (
+        <div>
+          <label htmlFor="book-genre" className="visually-hidden">
+            Genre
+          </label>
+          <select id="book-genre" className="select" value={genre} onChange={(event) => onGenreChange(event.target.value)}>
+            <option value="">All genres</option>
+            {genres.map((g) => (
+              <option key={g.name} value={g.name}>
+                {g.name} ({g.count})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label htmlFor="book-sort" className="visually-hidden">
           Sort by

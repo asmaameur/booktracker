@@ -4,10 +4,11 @@ import { BookPlus, Eye, Pencil, SearchX, Trash2 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import BookCover from '../../components/books/BookCover';
 import BookFilters from '../../components/books/BookFilters';
+import { RatingSummary } from '../../components/books/Rating';
 import DeleteBookDialog from '../../components/books/DeleteBookDialog';
 import { PageHeader, Pagination } from '../../components/ui/Display';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/States';
-import { booksApi } from '../../api';
+import { booksApi, genresApi } from '../../api';
 import { useApi } from '../../hooks/useApi';
 import { useBookQuery } from '../../hooks/useBookQuery';
 import { useDocumentTitle } from '../../hooks/misc';
@@ -18,13 +19,13 @@ const PAGE_SIZE = 10;
 export default function AdminBooksPage() {
   useDocumentTitle('Manage the catalogue');
   const query = useBookQuery();
-  const { search, category, sort, page } = query;
+  const { search, genre, sort, page } = query;
   const [toDelete, setToDelete] = useState(null);
 
-  const categories = useApi((signal) => booksApi.categories(signal), []);
+  const genres = useApi((signal) => genresApi.list(signal), []);
   const books = useApi(
-    (signal) => booksApi.list({ search, category, sort, page, limit: PAGE_SIZE }, signal),
-    [search, category, sort, page]
+    (signal) => booksApi.list({ search, genre, sort, page, limit: PAGE_SIZE }, signal),
+    [search, genre, sort, page]
   );
 
   const onDeleted = () => {
@@ -32,7 +33,7 @@ export default function AdminBooksPage() {
     const lastOnPage = books.data?.books.length === 1;
     if (lastOnPage && page > 1) query.setPage(page - 1);
     else books.reload();
-    categories.reload();
+    genres.reload();
   };
 
   const total = books.data?.pagination.total ?? 0;
@@ -53,9 +54,9 @@ export default function AdminBooksPage() {
       <BookFilters
         search={query.searchInput}
         onSearchChange={query.setSearchInput}
-        category={category}
-        onCategoryChange={query.setCategory}
-        categories={categories.data?.categories ?? []}
+        genre={genre}
+        onGenreChange={query.setGenre}
+        genres={genres.data?.genres ?? []}
         sort={sort}
         onSortChange={query.setSort}
       />
@@ -68,7 +69,7 @@ export default function AdminBooksPage() {
         <EmptyState
           icon={SearchX}
           title={query.isFiltered ? 'No books match your search' : 'The catalogue is empty'}
-          text={query.isFiltered ? 'Try another title, author or category.' : 'Add the first book to open the library.'}
+          text={query.isFiltered ? 'Try another title, author or genre.' : 'Add the first book to open the library.'}
         >
           {query.isFiltered ? (
             <Button variant="secondary" onClick={query.clear}>
@@ -85,17 +86,18 @@ export default function AdminBooksPage() {
           <p className="results-summary" aria-live="polite">
             {plural(total, 'book')}
             {search && ` matching “${search}”`}
-            {category && ` in ${category}`}
+            {genre && ` in ${genre}`}
           </p>
           <div className="panel">
             <table className="table book-table card-table">
               <thead>
                 <tr>
                   <th scope="col">Book</th>
-                  <th scope="col">Category</th>
+                  <th scope="col">Genre</th>
                   <th scope="col" className="num">
                     Year
                   </th>
+                  <th scope="col">Rating</th>
                   <th scope="col">PDF</th>
                   <th scope="col">Updated</th>
                   <th scope="col">
@@ -117,9 +119,14 @@ export default function AdminBooksPage() {
                         <span className="book-table__author">{book.author}</span>
                       </span>
                     </td>
-                    <td data-label="Category">{book.category || <span className="muted">None</span>}</td>
+                    <td data-label="Genre">
+                      <span className="tag">{book.genre}</span>
+                    </td>
                     <td data-label="Year" className="num">
                       {book.publicationYear ?? <span className="muted">Unknown</span>}
+                    </td>
+                    <td data-label="Rating">
+                      <RatingSummary averageRating={book.averageRating} ratingCount={book.ratingCount} compact />
                     </td>
                     <td data-label="PDF">
                       <span className={`badge ${book.hasPdf ? 'badge--gold' : 'badge--muted'}`}>

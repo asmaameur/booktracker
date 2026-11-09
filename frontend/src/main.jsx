@@ -14,6 +14,7 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/layout.css';
 import './styles/pages.css';
+import './styles/features.css';
 
 import App from './App';
 import { ThemeProvider } from './context/ThemeContext';

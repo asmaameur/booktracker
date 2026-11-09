@@ -40,7 +40,7 @@ React 18 · Vite 7 · React Router 6 · React-PDF 10 (PDF.js) · Lucide icons ·
 |        | `/check-email`              | Email verification: "check your inbox" and resend   |
 |        | `/verify-email?token=…`     | Verification result (the link in the email)         |
 | Reader | `/app`                      | Dashboard: continue reading, shelf counts, new books |
-|        | `/app/catalogue`            | Search, filter by category, sort, add to library    |
+|        | `/app/catalogue`            | Search, filter by genre, sort, add to library    |
 |        | `/app/books/:id`            | Book details, reading status, progress              |
 |        | `/app/library`              | My Library with To Read / Reading / Read tabs       |
 |        | `/app/read/:id`             | PDF reader                                          |

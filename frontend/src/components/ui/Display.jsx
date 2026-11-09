@@ -62,7 +62,7 @@ export function ProgressMeter({ currentPage, totalPages, percent, status, label 
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value}
-        aria-valuetext={`${value}% read. ${pages}`}
+        aria-valuetext={`${value}% done. ${label || pages}`}
       >
         <div className="meter__fill" style={{ width: `${value}%` }} />
       </div>

@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDebouncedValue } from './misc';
 
-// Catalogue filters stored in the URL (?search=&category=&sort=&page=), so
+// Catalogue filters stored in the URL (?search=&genre=&sort=&page=), so
 // they survive a refresh and work with the back button. The search box is
 // debounced: the URL, and therefore the request, updates once typing pauses.
 export function useBookQuery() {
   const [params, setParams] = useSearchParams();
   const search = params.get('search') || '';
-  const category = params.get('category') || '';
+  const genre = params.get('genre') || '';
   const sort = params.get('sort') || 'newest';
   const page = Math.max(1, Number(params.get('page')) || 1);
 
@@ -39,18 +39,18 @@ export function useBookQuery() {
 
   return {
     search,
-    category,
+    genre,
     sort,
     page,
     searchInput,
     setSearchInput,
-    setCategory: (value) => update({ category: value }),
+    setGenre: (value) => update({ genre: value }),
     setSort: (value) => update({ sort: value === 'newest' ? '' : value }),
     setPage: (value) => update({ page: value > 1 ? String(value) : '' }),
     clear: () => {
       setSearchInput('');
       setParams({}, { replace: true });
     },
-    isFiltered: Boolean(search || category),
+    isFiltered: Boolean(search || genre),
   };
 }

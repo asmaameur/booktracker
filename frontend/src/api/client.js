@@ -88,6 +88,25 @@ export async function request(path, { method = 'GET', body, query, signal, keepa
   return response.json();
 }
 
+// Uploads one file (a cover image or a PDF) as the raw request body, with the
+// file's own type. Answers like `request` (JSON, or an ApiError).
+export async function uploadFile(path, file, { signal } = {}) {
+  let response;
+  try {
+    response = await fetch(buildUrl(path), {
+      method: 'POST',
+      signal,
+      headers: { Accept: 'application/json', 'Content-Type': file.type || 'application/octet-stream', ...authHeaders() },
+      body: file,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    throw new ApiError(NETWORK_MESSAGE, { code: 'NETWORK_ERROR' });
+  }
+  if (!response.ok) throw await toApiError(response);
+  return response.json();
+}
+
 // Downloads a binary file (a book's PDF) and reports progress from 0 to 1
 // when the server sends the file size.
 export async function requestFile(path, { signal, onProgress } = {}) {

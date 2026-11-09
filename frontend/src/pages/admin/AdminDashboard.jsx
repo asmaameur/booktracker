@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { BookPlus, FileText, Library, LibraryBig, UsersRound } from 'lucide-react';
+import { BookPlus, FileText, Library, LibraryBig, MessageSquareText, UsersRound } from 'lucide-react';
+import { Stars } from '../../components/books/Rating';
 import Button from '../../components/ui/Button';
 import BookCover from '../../components/books/BookCover';
 import { RankedBars, SegmentedBar } from '../../components/charts/Charts';
@@ -9,7 +10,7 @@ import { adminApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { useDocumentTitle } from '../../hooks/misc';
-import { firstName, formatNumber, formatShortDate, plural } from '../../utils/format';
+import { firstName, formatNumber, formatRelative, formatShortDate, plural } from '../../utils/format';
 
 function BookList({ books, emptyText, meta }) {
   if (books.length === 0) return <p className="muted panel__body">{emptyText}</p>;
@@ -32,6 +33,41 @@ function BookList({ books, emptyText, meta }) {
     </ul>
   );
 }
+
+// The latest reviews across the catalogue, newest first.
+function LatestReviews({ reviews }) {
+  if (reviews.length === 0) {
+    return <EmptyState icon={MessageSquareText} title="No reviews yet" text="Ratings from readers will appear here." compact />;
+  }
+  return (
+    <ul className="mini-books">
+      {reviews.map((review) => (
+        <li key={review.id}>
+          <Link to={`/admin/books/${review.book.id}`} className="mini-book">
+            <span className="mini-book__cover">
+              <BookCover book={review.book} />
+            </span>
+            <span className="mini-book__text">
+              <span className="mini-book__title">{review.book.title}</span>
+              <span className="mini-book__author">
+                {review.userName}
+                {review.comment && ` · “${review.comment.length > 60 ? `${review.comment.slice(0, 57)}…` : review.comment}”`}
+              </span>
+            </span>
+            <span className="mini-book__meta activity__rating">
+              <span role="img" aria-label={`${plural(review.rating, 'star')} out of 5`}>
+                <Stars value={review.rating} size="sm" />
+              </span>
+              <span>{formatRelative(review.createdAt)}</span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const ratingMeta = (book) => `${book.averageRating.toFixed(1)} ★ · ${plural(book.ratingCount, 'rating')}`;
 
 export default function AdminDashboard() {
   useDocumentTitle('Admin dashboard');
@@ -73,15 +109,15 @@ export default function AdminDashboard() {
     );
   }
 
-  const { totals, readingStatus, booksByCategory, recentBooks, recentReaders, popularBooks } = stats.data;
-  const uncategorised = totals.books - booksByCategory.reduce((sum, c) => sum + c.count, 0);
+  const { totals, readingStatus, booksByGenre, recentBooks, recentReaders, popularBooks } = stats.data;
+  const { latestReviews, topRatedBooks, lowestRatedBooks } = stats.data;
 
   return (
     <>
       {header}
 
       <section className="stat-row dashboard-section" aria-label="Totals">
-        <StatTile icon={LibraryBig} label="Books in the catalogue" value={totals.books} note={plural(totals.categories, 'category', 'categories')} />
+        <StatTile icon={LibraryBig} label="Books in the catalogue" value={totals.books} note={plural(totals.genres, 'genre')} />
         <StatTile
           icon={UsersRound}
           label="Registered users"
@@ -118,27 +154,24 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        <section className="panel" aria-labelledby="category-title">
+        <section className="panel" aria-labelledby="genre-title">
           <div className="panel__header">
             <div>
-              <h2 id="category-title" className="panel__title">
-                Books by category
+              <h2 id="genre-title" className="panel__title">
+                Books by genre
               </h2>
-              <p className="panel__subtitle">Number of titles in each category</p>
+              <p className="panel__subtitle">Number of titles in each genre</p>
             </div>
           </div>
           <div className="panel__body">
-            {booksByCategory.length === 0 ? (
-              <p className="muted">No categories yet.</p>
+            {booksByGenre.length === 0 ? (
+              <p className="muted">No books yet.</p>
             ) : (
               <RankedBars
-                caption="Number of books in each category"
-                labelHeader="Category"
+                caption="Number of books in each genre"
+                labelHeader="Genre"
                 valueHeader="Books"
-                rows={[
-                  ...booksByCategory.map((c) => ({ label: c.name, value: c.count })),
-                  ...(uncategorised > 0 ? [{ label: 'No category', value: uncategorised }] : []),
-                ]}
+                rows={booksByGenre.map((g) => ({ label: g.name, value: g.count }))}
               />
             )}
           </div>
@@ -177,6 +210,46 @@ export default function AdminDashboard() {
             emptyText="The catalogue is empty. Add the first book."
             meta={(book) => formatShortDate(book.createdAt)}
           />
+        </section>
+      </div>
+
+      <section className="panel dashboard-section activity__reviews" aria-labelledby="latest-reviews-title">
+        <div className="panel__header">
+          <div>
+            <h2 id="latest-reviews-title" className="panel__title">
+              Latest reviews
+            </h2>
+            <p className="panel__subtitle">
+              {plural(totals.reviewsLast7Days, 'review')} and {plural(totals.readersJoinedLast7Days, 'new reader')} this week
+            </p>
+          </div>
+        </div>
+        <LatestReviews reviews={latestReviews} />
+      </section>
+
+      <div className="dashboard-grid">
+        <section className="panel" aria-labelledby="top-rated-title">
+          <div className="panel__header">
+            <div>
+              <h2 id="top-rated-title" className="panel__title">
+                Best rated
+              </h2>
+              <p className="panel__subtitle">Highest average rating from readers</p>
+            </div>
+          </div>
+          <BookList books={topRatedBooks} emptyText="No book has been rated yet." meta={ratingMeta} />
+        </section>
+
+        <section className="panel" aria-labelledby="low-rated-title">
+          <div className="panel__header">
+            <div>
+              <h2 id="low-rated-title" className="panel__title">
+                Lowest rated
+              </h2>
+              <p className="panel__subtitle">Books averaging under 3 stars, worth a look</p>
+            </div>
+          </div>
+          <BookList books={lowestRatedBooks} emptyText="No book averages under 3 stars." meta={ratingMeta} />
         </section>
       </div>
 

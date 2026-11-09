@@ -3,6 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { BookOpen, Plus, Trash2 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import BookCover from '../../components/books/BookCover';
+import ReviewsSection from '../../components/books/ReviewsSection';
+import AlsoLiked from '../../components/books/AlsoLiked';
+import { RatingSummary } from '../../components/books/Rating';
 import StatusPicker from '../../components/books/StatusPicker';
 import { ConfirmDialog } from '../../components/ui/Modal';
 import { BackLink, ProgressMeter } from '../../components/ui/Display';
@@ -130,6 +133,8 @@ export default function BookDetailsPage() {
 
   const { book, libraryEntry } = details.data;
   const setEntry = (entry) => details.setData((data) => ({ ...data, libraryEntry: entry }));
+  const setSummary = ({ averageRating, ratingCount }) =>
+    details.setData((data) => ({ ...data, book: { ...data.book, averageRating, ratingCount } }));
 
   return (
     <>
@@ -140,9 +145,12 @@ export default function BookDetailsPage() {
         </div>
 
         <div className="book-detail__body">
-          {book.category && <span className="eyebrow">{book.category}</span>}
+          <span className="eyebrow">{book.genre}</span>
           <h1 className="book-detail__title">{book.title}</h1>
           <p className="book-detail__author">by {book.author}</p>
+          <a href="#reviews-title" className="book-detail__rating">
+            <RatingSummary averageRating={book.averageRating} ratingCount={book.ratingCount} />
+          </a>
 
           <dl className="book-detail__facts">
             {book.publicationYear && (
@@ -178,8 +186,12 @@ export default function BookDetailsPage() {
           )}
 
           <LibraryPanel book={book} entry={libraryEntry} onChange={setEntry} />
+
+          <ReviewsSection bookId={book.id} canReview onSummaryChange={setSummary} />
         </div>
       </article>
+
+      <AlsoLiked bookId={book.id} />
     </>
   );
 }

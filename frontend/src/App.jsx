@@ -10,12 +10,15 @@ import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import CheckEmailPage from './pages/public/CheckEmailPage';
 import VerifyEmailPage from './pages/public/VerifyEmailPage';
+import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
+import ResetPasswordPage from './pages/public/ResetPasswordPage';
 import NotFoundPage from './pages/public/NotFoundPage';
 
 import ReaderDashboard from './pages/reader/ReaderDashboard';
 import CataloguePage from './pages/reader/CataloguePage';
 import BookDetailsPage from './pages/reader/BookDetailsPage';
 import LibraryPage from './pages/reader/LibraryPage';
+import ReadingStatsPage from './pages/reader/ReadingStatsPage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminBooksPage from './pages/admin/AdminBooksPage';
@@ -46,9 +49,11 @@ export default function App() {
           <Route element={<PublicOnly />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
           <Route path="/check-email" element={<CheckEmailPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<RequireRole role="user" />}>
             <Route path="/app" element={<AppLayout variant="user" />}>
@@ -56,6 +61,7 @@ export default function App() {
               <Route path="catalogue" element={<CataloguePage />} />
               <Route path="books/:id" element={<BookDetailsPage />} />
               <Route path="library" element={<LibraryPage />} />
+              <Route path="stats" element={<ReadingStatsPage />} />
               <Route path="profile" element={<ProfilePage />} />
             </Route>
             <Route path="/app/read/:id" element={<ReaderPage mode="reader" />} />
