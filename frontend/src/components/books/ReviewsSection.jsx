@@ -4,11 +4,12 @@ import Button from '../ui/Button';
 import Modal, { ConfirmDialog } from '../ui/Modal';
 import { TextAreaField } from '../ui/FormFields';
 import { ErrorState, LoadingState } from '../ui/States';
+import Avatar from '../ui/Avatar';
 import { RatingSummary, StarInput, Stars } from './Rating';
 import { reviewsApi } from '../../api';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
-import { formatRelative, initials, plural } from '../../utils/format';
+import { formatRelative, plural } from '../../utils/format';
 
 const COMMENT_MAX = 2000;
 
@@ -115,9 +116,7 @@ function ReviewForm({ bookId, existing, onSaved, onCancel }) {
 function ReviewItem({ review, mine, onEdit, onDelete, onModerate, onHelpful, voting }) {
   return (
     <li className={`review ${mine ? 'review--mine' : ''}`}>
-      <span className="avatar" aria-hidden="true">
-        {initials(review.userName)}
-      </span>
+      <Avatar name={review.userName} url={review.userAvatarUrl} />
       <div className="review__body">
         <div className="review__head">
           <strong className="review__name">{mine ? 'You' : review.userName}</strong>

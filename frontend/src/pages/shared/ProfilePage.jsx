@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Check, KeyRound, Mail, Save, UserRound } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Cake, Camera, Check, KeyRound, Mail, Save, Trash2, UserRound } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PasswordField, TextField } from '../../components/ui/FormFields';
 import { PageHeader } from '../../components/ui/Display';
@@ -10,7 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
 import { useDocumentTitle } from '../../hooks/misc';
-import { formatDate, initials } from '../../utils/format';
+import { formatDate, plural } from '../../utils/format';
+import Avatar from '../../components/ui/Avatar';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASSWORD_RULES = [
@@ -19,19 +20,126 @@ const PASSWORD_RULES = [
   { id: 'number', label: 'At least one number', test: (p) => /\d/.test(p) },
 ];
 
+// Today as 'YYYY-MM-DD' in local time (for the date picker's maximum).
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Full years since a 'YYYY-MM-DD' date (same rule as the server).
+function ageFrom(birthDate) {
+  const [year, month, day] = birthDate.split('-').map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age -= 1;
+  return age;
+}
+
+// Mirrors backend/src/middleware/validators/authValidators.js (5 to 120 years).
+function birthDateProblem(value) {
+  if (!value) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Please enter a valid date of birth.';
+  const age = ageFrom(value);
+  if (Number.isNaN(age) || age < 5 || age > 120) return 'Your age must be between 5 and 120 years.';
+  return null;
+}
+
+// The profile picture on the profile card: upload a new one or remove it.
+function AvatarPicker({ user, onSaved }) {
+  const toast = useToast();
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(null);
+
+  const onFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Please choose a JPG, PNG or WebP image.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('This image is too large. The limit is 2 MB.');
+      return;
+    }
+    setBusy('upload');
+    try {
+      const result = await profileApi.uploadAvatar(file);
+      onSaved(result);
+      toast.success(result.message, 'Profile');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async () => {
+    setBusy('remove');
+    try {
+      const result = await profileApi.removeAvatar();
+      onSaved(result);
+      toast.success(result.message, 'Profile');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="avatar-picker">
+      <Avatar name={user.name} url={user.avatarUrl} size="lg" />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="visually-hidden"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={onFile}
+      />
+      <div className="avatar-picker__actions">
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Camera}
+          loading={busy === 'upload'}
+          disabled={Boolean(busy)}
+          onClick={() => inputRef.current?.click()}
+        >
+          {user.avatarUrl ? 'Change photo' : 'Add a photo'}
+        </Button>
+        {user.avatarUrl && (
+          <Button variant="danger-ghost" size="sm" icon={Trash2} loading={busy === 'remove'} disabled={Boolean(busy)} onClick={remove}>
+            Remove
+          </Button>
+        )}
+      </div>
+      <p className="avatar-picker__hint">JPG, PNG or WebP, up to 2 MB.</p>
+    </div>
+  );
+}
+
 function DetailsForm({ user, onSaved }) {
   const toast = useToast();
-  const [values, setValues] = useState({ name: user.name, email: user.email, currentPassword: '' });
+  const [values, setValues] = useState({
+    name: user.name,
+    email: user.email,
+    birthDate: user.birthDate || '',
+    currentPassword: '',
+  });
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setValues((v) => ({ ...v, name: user.name, email: user.email }));
-  }, [user.name, user.email]);
+    setValues((v) => ({ ...v, name: user.name, email: user.email, birthDate: user.birthDate || '' }));
+  }, [user.name, user.email, user.birthDate]);
 
   const emailChanged = values.email.trim().toLowerCase() !== user.email;
   const nameChanged = values.name.trim() !== user.name;
+  const birthDateChanged = values.birthDate !== (user.birthDate || '');
 
   const update = (field) => (event) => {
     setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -45,12 +153,14 @@ function DetailsForm({ user, onSaved }) {
     const name = values.name.trim();
     if (name.length < 2 || name.length > 100) nextErrors.name = 'Name must be between 2 and 100 characters.';
     if (!EMAIL_PATTERN.test(values.email.trim())) nextErrors.email = 'Please enter a valid email address.';
+    const birthProblem = birthDateProblem(values.birthDate);
+    if (birthProblem) nextErrors.birthDate = birthProblem;
     if (emailChanged && !values.currentPassword) {
       nextErrors.currentPassword = 'Enter your current password to change your email address.';
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
-    if (!nameChanged && !emailChanged) {
+    if (!nameChanged && !emailChanged && !birthDateChanged) {
       setMessage({ type: 'info', text: 'Nothing to save: your details are unchanged.' });
       return;
     }
@@ -59,6 +169,7 @@ function DetailsForm({ user, onSaved }) {
     try {
       const payload = {};
       if (nameChanged) payload.name = name;
+      if (birthDateChanged) payload.birthDate = values.birthDate || null;
       if (emailChanged) {
         payload.email = values.email.trim();
         payload.currentPassword = values.currentPassword;
@@ -102,6 +213,23 @@ function DetailsForm({ user, onSaved }) {
           onChange={update('email')}
           error={errors.email}
           hint={emailChanged ? 'We will send a confirmation link to this new address.' : undefined}
+        />
+        <TextField
+          label="Date of birth"
+          type="date"
+          icon={Cake}
+          optional
+          autoComplete="bday"
+          min="1900-01-01"
+          max={todayIso()}
+          value={values.birthDate}
+          onChange={update('birthDate')}
+          error={errors.birthDate}
+          hint={
+            values.birthDate && !birthDateProblem(values.birthDate)
+              ? `You are ${plural(ageFrom(values.birthDate), 'year')} old. Only you can see this.`
+              : 'Only you can see your date of birth and age. Clear the field to remove it.'
+          }
         />
         {emailChanged && (
           <PasswordField
@@ -250,22 +378,26 @@ export default function ProfilePage() {
         title="Profile"
         description={
           user.role === 'admin'
-            ? 'Manage your name, email address and password.'
-            : 'Manage your name, email address, favourite genres and password.'
+            ? 'Manage your photo, name, email address and password.'
+            : 'Manage your photo, name, date of birth, favourite genres and password.'
         }
       />
 
       <div className="profile">
         <aside className="profile__card panel panel__body">
-          <span className="avatar avatar--lg" aria-hidden="true">
-            {initials(user.name)}
-          </span>
+          <AvatarPicker user={user} onSaved={onSaved} />
           <h2 className="profile__name">{user.name}</h2>
           <p className="muted profile__email">{user.email}</p>
           <span className="badge badge--gold">{user.role === 'admin' ? 'Administrator' : 'Reader'}</span>
           <dl className="details-list profile__facts">
             <dt>Member since</dt>
             <dd>{formatDate(user.createdAt)}</dd>
+            {user.age != null && (
+              <>
+                <dt>Age</dt>
+                <dd>{plural(user.age, 'year')}</dd>
+              </>
+            )}
             <dt>Email</dt>
             <dd>{user.isVerified ? 'Verified' : 'Not verified'}</dd>
           </dl>

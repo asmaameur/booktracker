@@ -9,7 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
 import { useDebouncedValue, useDocumentTitle } from '../../hooks/misc';
-import { formatShortDate, initials, plural } from '../../utils/format';
+import { formatShortDate, plural } from '../../utils/format';
+import Avatar from '../../components/ui/Avatar';
 
 const PAGE_SIZE = 20;
 const ROLE_OPTIONS = [
@@ -146,9 +147,7 @@ export default function AdminUsersPage() {
                   return (
                     <tr key={account.id}>
                       <td className="card-table__main user-table__account">
-                        <span className="avatar" aria-hidden="true">
-                          {initials(account.name)}
-                        </span>
+                        <Avatar name={account.name} url={account.avatarUrl} />
                         <span className="user-table__text">
                           <span className="user-table__name">
                             {account.name}

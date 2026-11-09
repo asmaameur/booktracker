@@ -15,6 +15,8 @@ export const profileApi = {
   get: (signal) => request('/profile', { signal }),
   update: (data) => request('/profile', { method: 'PATCH', body: data }),
   changePassword: (data) => request('/profile/password', { method: 'PUT', body: data }),
+  uploadAvatar: (file) => uploadFile('/profile/avatar', file),
+  removeAvatar: () => request('/profile/avatar', { method: 'DELETE' }),
 };
 
 export const booksApi = {

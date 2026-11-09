@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Logo, ThemeToggle } from './Brand';
 import NotificationBell from './NotificationBell';
-import { initials } from '../../utils/format';
+import Avatar from '../ui/Avatar';
 
 // `activeWhen` keeps a section highlighted on its sub-pages (a book's details
 // belong to "Catalogue").
@@ -149,9 +149,7 @@ export default function AppLayout({ variant }) {
             <ThemeToggle />
             <NotificationBell variant={variant} />
             <Link to={`${home}/profile`} className="user-chip" aria-label={`Your profile (${user?.name})`}>
-              <span className="avatar" aria-hidden="true">
-                {initials(user?.name)}
-              </span>
+              <Avatar name={user?.name} url={user?.avatarUrl} />
               <span className="user-chip__text">
                 <span className="user-chip__name">{user?.name}</span>
                 <span className="user-chip__role">{user?.role === 'admin' ? 'Administrator' : 'Reader'}</span>
